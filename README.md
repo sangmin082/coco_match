@@ -8,6 +8,12 @@
 
 자세한 기획은 [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) 참고.
 
+## 📲 TestFlight 자동 배포
+
+`main` 또는 `claude/**` 브랜치에 푸시하면 GitHub Actions가 자동으로 빌드해서 TestFlight에 업로드합니다
+(`.github/workflows/testflight.yml`). 최초 1회 Apple 계정 설정이 필요합니다 →
+**[docs/TESTFLIGHT_SETUP.md](docs/TESTFLIGHT_SETUP.md) 가이드 참고**
+
 ## 실행 방법
 
 1. **Xcode 16 이상**에서 `CocoMatch.xcodeproj` 열기

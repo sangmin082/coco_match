@@ -255,6 +255,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CocoMatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "코코 매치";
 				INFOPLIST_KEY_NSMotionUsageDescription = "기기를 기울이면 게임 속 아이템이 움직입니다. 모션 데이터는 게임 조작에만 사용됩니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -284,6 +285,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CocoMatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "코코 매치";
 				INFOPLIST_KEY_NSMotionUsageDescription = "기기를 기울이면 게임 속 아이템이 움직입니다. 모션 데이터는 게임 조작에만 사용됩니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
