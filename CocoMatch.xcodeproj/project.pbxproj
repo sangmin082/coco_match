@@ -10,9 +10,22 @@
 		C0C0A1C4000000000000000A /* CocoMatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CocoMatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C0C0A1C40000000000000010 /* Exceptions for "CocoMatch" folder in "CocoMatch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C0C0A1C40000000000000005 /* CocoMatch */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C0C0A1C40000000000000001 /* CocoMatch */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C0C0A1C40000000000000010 /* Exceptions for "CocoMatch" folder in "CocoMatch" target */,
+			);
 			path = CocoMatch;
 			sourceTree = "<group>";
 		};
