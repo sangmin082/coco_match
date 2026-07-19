@@ -74,7 +74,9 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
-      - name: Archive
+      # 아카이브는 서명 없이 빌드한다. CI에는 등록된 기기가 없어 개발용 프로파일을
+      # 만들 수 없기 때문. 서명은 export 단계에서 배포용(App Store)으로 수행된다.
+      - name: Archive (unsigned)
         run: |
           xcodebuild archive \
             -project CocoMatch.xcodeproj \
@@ -82,13 +84,9 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$HOME/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8" \
-            -authenticationKeyID "$APPSTORE_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
       - name: Export & upload to TestFlight
