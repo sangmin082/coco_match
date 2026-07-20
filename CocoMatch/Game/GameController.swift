@@ -15,11 +15,14 @@ final class GameController: NSObject {
     private var itemNodes: [SCNNode] = []
     private var lastShake: CFTimeInterval = 0
 
-    // 수조(탱크) 크기 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식)
-    // 폭 = 화면 좌우, 높이 = 화면 상하, 깊이 = 얕은 앞뒤 (아이템 2겹 정도)
+    // 플레이 박스 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식).
+    // 상단 HUD와 하단 트레이/부스터 UI에 겹치지 않도록 화면 중앙 영역만 사용한다.
+    // 카메라 기준 화면 세로 가시 범위는 대략 y -0.8 ~ 13.8.
     private let tankWidth: Float = 7
-    private let tankHeight: Float = 13
-    private let tankDepth: Float = 2.6
+    private let tankDepth: Float = 3.2
+    private let boxBottom: Float = 2.4   // 박스 바닥 높이 (트레이/부스터 위)
+    private let boxTop: Float = 10.6     // 박스 천장 높이 (HUD 아래)
+    private var boxCenterY: Float { (boxBottom + boxTop) / 2 }
 
     init(gameState: GameState) {
         self.gameState = gameState
@@ -65,7 +68,7 @@ final class GameController: NSObject {
         cameraNode.camera = SCNCamera()
         cameraNode.camera?.fieldOfView = 55
         cameraNode.camera?.zFar = 120
-        cameraNode.position = SCNVector3(0, tankHeight * 0.5, 14)
+        cameraNode.position = SCNVector3(0, 6.5, 14)
         scene.rootNode.addChildNode(cameraNode)
 
         let ambient = SCNNode()
@@ -86,82 +89,68 @@ final class GameController: NSObject {
     }
 
     private func setupBin() {
-        let wallTall: Float = 22
+        let innerHeight = boxTop - boxBottom
+        let sand = UIColor(red: 0.95, green: 0.83, blue: 0.60, alpha: 1)
+        let backYellow = UIColor(red: 0.99, green: 0.90, blue: 0.70, alpha: 1)
+        let wood = UIColor(red: 0.62, green: 0.42, blue: 0.24, alpha: 1)
 
-        // 모래색 바닥 (화면 하단)
-        let floorGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
-                                   height: 1,
-                                   length: CGFloat(tankDepth) + 1.6,
-                                   chamferRadius: 0.15)
-        floorGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.95, green: 0.83, blue: 0.60, alpha: 1)
-        let floor = SCNNode(geometry: floorGeometry)
-        floor.position = SCNVector3(0, -0.5, 0)
-        floor.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        floor.physicsBody?.friction = 0.6
-        floor.physicsBody?.restitution = 0.4
-        scene.rootNode.addChildNode(floor)
+        // 박스 바닥 (모래색 선반) / 천장 (나무 프레임)
+        staticBox(width: tankWidth + 1.4, height: 0.6, length: tankDepth + 1.4,
+                  position: SCNVector3(0, boxBottom - 0.3, 0), color: sand)
+        staticBox(width: tankWidth + 1.4, height: 0.6, length: tankDepth + 1.4,
+                  position: SCNVector3(0, boxTop + 0.3, 0), color: wood)
 
-        // 노란 모래빛 뒷벽 — 화면 배경 역할
-        let backGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
-                                  height: CGFloat(wallTall),
-                                  length: 0.5,
-                                  chamferRadius: 0)
-        backGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.99, green: 0.90, blue: 0.70, alpha: 1)
-        let back = SCNNode(geometry: backGeometry)
-        back.position = SCNVector3(0, wallTall / 2 - 1, -tankDepth / 2 - 0.25)
-        back.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        back.physicsBody?.restitution = 0.4
-        back.castsShadow = false
-        scene.rootNode.addChildNode(back)
+        // 노란 모래빛 뒷벽 (박스 배경)
+        staticBox(width: tankWidth + 1.4, height: innerHeight, length: 0.5,
+                  position: SCNVector3(0, boxCenterY, -tankDepth / 2 - 0.25), color: backYellow)
 
         // 좌우 반투명 유리벽
-        addWall(size: (0.5, wallTall, tankDepth + 1.6),
-                position: SCNVector3(tankWidth / 2 + 0.25, wallTall / 2 - 1, 0))
-        addWall(size: (0.5, wallTall, tankDepth + 1.6),
-                position: SCNVector3(-tankWidth / 2 - 0.25, wallTall / 2 - 1, 0))
+        staticBox(width: 0.5, height: innerHeight, length: tankDepth + 1.4,
+                  position: SCNVector3(tankWidth / 2 + 0.25, boxCenterY, 0),
+                  color: .white, transparency: 0.12)
+        staticBox(width: 0.5, height: innerHeight, length: tankDepth + 1.4,
+                  position: SCNVector3(-tankWidth / 2 - 0.25, boxCenterY, 0),
+                  color: .white, transparency: 0.12)
 
         // 보이지 않는 앞 유리 — 아이템이 카메라 쪽으로 쏟아지지 않게 막는다
-        let frontGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
-                                   height: CGFloat(wallTall),
-                                   length: 0.4,
-                                   chamferRadius: 0)
-        let front = SCNNode(geometry: frontGeometry)
-        front.position = SCNVector3(0, wallTall / 2 - 1, tankDepth / 2 + 0.2)
-        front.opacity = 0
-        front.castsShadow = false
-        front.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        front.physicsBody?.restitution = 0.4
-        scene.rootNode.addChildNode(front)
+        staticBox(width: tankWidth + 1.4, height: innerHeight, length: 0.4,
+                  position: SCNVector3(0, boxCenterY, tankDepth / 2 + 0.2),
+                  color: .white, transparency: 0)
 
-        // 흔들었을 때 아이템이 위로 날아가지 않게 막는 투명 천장
-        let ceilingGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
-                                     height: 0.5,
-                                     length: CGFloat(tankDepth) + 1.6,
-                                     chamferRadius: 0)
-        let ceiling = SCNNode(geometry: ceilingGeometry)
-        ceiling.position = SCNVector3(0, wallTall - 2, 0)
-        ceiling.opacity = 0
-        ceiling.castsShadow = false
-        ceiling.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        scene.rootNode.addChildNode(ceiling)
+        // 박스 앞면 테두리 프레임 (나무 막대) — 플레이 영역을 또렷하게 보여준다
+        let zFront = tankDepth / 2 + 0.4
+        staticBox(width: tankWidth + 1.4, height: 0.22, length: 0.22,
+                  position: SCNVector3(0, boxBottom, zFront), color: wood, hasPhysics: false)
+        staticBox(width: tankWidth + 1.4, height: 0.22, length: 0.22,
+                  position: SCNVector3(0, boxTop, zFront), color: wood, hasPhysics: false)
+        staticBox(width: 0.22, height: innerHeight + 0.22, length: 0.22,
+                  position: SCNVector3(tankWidth / 2 + 0.6, boxCenterY, zFront), color: wood, hasPhysics: false)
+        staticBox(width: 0.22, height: innerHeight + 0.22, length: 0.22,
+                  position: SCNVector3(-tankWidth / 2 - 0.6, boxCenterY, zFront), color: wood, hasPhysics: false)
     }
 
-    private func addWall(size: (Float, Float, Float), position: SCNVector3) {
-        let geometry = SCNBox(width: CGFloat(size.0),
-                              height: CGFloat(size.1),
-                              length: CGFloat(size.2),
-                              chamferRadius: 0.05)
+    @discardableResult
+    private func staticBox(width: Float, height: Float, length: Float,
+                           position: SCNVector3, color: UIColor,
+                           transparency: CGFloat = 1,
+                           hasPhysics: Bool = true) -> SCNNode {
+        let geometry = SCNBox(width: CGFloat(width), height: CGFloat(height),
+                              length: CGFloat(length), chamferRadius: 0.05)
         let material = SCNMaterial()
-        material.diffuse.contents = UIColor.white
-        material.transparency = 0.10
+        material.diffuse.contents = color
+        material.transparency = transparency
         material.isDoubleSided = true
         geometry.materials = [material]
-        let wall = SCNNode(geometry: geometry)
-        wall.position = position
-        wall.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        wall.physicsBody?.restitution = 0.4
-        wall.castsShadow = false
-        scene.rootNode.addChildNode(wall)
+        let node = SCNNode(geometry: geometry)
+        node.position = position
+        if hasPhysics {
+            node.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+            node.physicsBody?.restitution = 0.4
+            node.physicsBody?.friction = 0.6
+        }
+        if transparency < 0.99 { node.castsShadow = false }
+        scene.rootNode.addChildNode(node)
+        return node
     }
 
     // MARK: - Items
@@ -173,20 +162,29 @@ final class GameController: NSObject {
         }
         bag.shuffle()
 
-        for (index, type) in bag.enumerated() {
-            let node = ItemNodeFactory.makeNode(for: type)
-            node.position = SCNVector3(
-                Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8)),
-                5 + Float(index / 10) * 1.3,
-                Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
-            )
-            node.eulerAngles = SCNVector3(
-                Float.random(in: 0...Float.pi),
-                Float.random(in: 0...Float.pi),
-                Float.random(in: 0...Float.pi)
-            )
-            itemNodes.append(node)
-            scene.rootNode.addChildNode(node)
+        // 닫힌 박스 안에서 겹침 폭발이 없도록, 박스 상단에서 웨이브로 나눠 떨어뜨린다
+        let waveSize = 12
+        for start in stride(from: 0, to: bag.count, by: waveSize) {
+            let wave = Array(bag[start..<min(start + waveSize, bag.count)])
+            let delay = Double(start / waveSize) * 0.3
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self else { return }
+                for type in wave {
+                    let node = ItemNodeFactory.makeNode(for: type)
+                    node.position = SCNVector3(
+                        Float.random(in: (-self.tankWidth / 2 + 0.8)...(self.tankWidth / 2 - 0.8)),
+                        Float.random(in: (self.boxTop - 1.8)...(self.boxTop - 0.9)),
+                        Float.random(in: (-self.tankDepth / 2 + 0.6)...(self.tankDepth / 2 - 0.6))
+                    )
+                    node.eulerAngles = SCNVector3(
+                        Float.random(in: 0...Float.pi),
+                        Float.random(in: 0...Float.pi),
+                        Float.random(in: 0...Float.pi)
+                    )
+                    self.itemNodes.append(node)
+                    self.scene.rootNode.addChildNode(node)
+                }
+            }
         }
     }
 
