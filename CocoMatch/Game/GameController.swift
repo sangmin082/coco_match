@@ -196,18 +196,24 @@ final class GameController: NSObject {
         motion.startDeviceMotionUpdates(to: .main) { [weak self] data, _ in
             guard let self, let data else { return }
 
-            // 갈매기 게임식 정면 뷰 매핑: 화면 좌우 = 씬 X, 화면 상하 = 씬 Y.
-            // 폰을 세워 든 상태에서 중력이 화면 아래(-Y)로 향하고,
-            // 좌우로 기울이면 실제 지구 중력 방향 그대로 아이템이 쏠린다.
-            // 앞뒤 기울임(gz)은 얕은 수조 깊이에 맞게 약하게 반영하고
-            // 살짝 뒷벽 쪽으로 눌러 아이템이 앞유리에 붙지 않게 한다.
+            // 갈매기 게임식 매핑: 중력의 "화면 평면(x,y) 성분"만 사용하고
+            // 크기를 항상 1g로 정규화한다. 폰을 뒤로 눕혀 들어도 중력이
+            // 언제나 풀 파워로 화면 아래(중앙 하단)를 향하고,
+            // 좌우로 기울인 만큼만 방향이 회전한다.
+            // z축은 상수 힘으로 뒷벽에 살짝 붙여 얕은 수조에서 안정시킨다.
             let g = data.gravity
             let k = 9.8
-            self.scene.physicsWorld.gravity = SCNVector3(
-                Float(g.x * k * 1.5),
-                Float(g.y * k),
-                Float(g.z * k * 0.6 - 0.8)
-            )
+            let planar = sqrt(g.x * g.x + g.y * g.y)
+            if planar > 0.08 {
+                self.scene.physicsWorld.gravity = SCNVector3(
+                    Float(g.x / planar * k * 1.2),
+                    Float(g.y / planar * k),
+                    -2.2
+                )
+            } else {
+                // 폰이 거의 수평(테이블 위 등): 화면 아래로 기본 중력
+                self.scene.physicsWorld.gravity = SCNVector3(0, -9.8, -2.2)
+            }
 
             let ua = data.userAcceleration
             let magnitude = sqrt(ua.x * ua.x + ua.y * ua.y + ua.z * ua.z)
