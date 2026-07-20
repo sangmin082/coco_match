@@ -100,6 +100,7 @@ final class GameController: NSObject {
         floor.position = SCNVector3(0, -0.5, 0)
         floor.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
         floor.physicsBody?.friction = 0.6
+        floor.physicsBody?.restitution = 0.4
         scene.rootNode.addChildNode(floor)
 
         // 반투명 유리벽 4면
@@ -134,6 +135,7 @@ final class GameController: NSObject {
         let wall = SCNNode(geometry: geometry)
         wall.position = position
         wall.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+        wall.physicsBody?.restitution = 0.4
         wall.castsShadow = false
         scene.rootNode.addChildNode(wall)
     }
@@ -148,7 +150,7 @@ final class GameController: NSObject {
         bag.shuffle()
 
         for (index, type) in bag.enumerated() {
-            let node = makeItemNode(type)
+            let node = ItemNodeFactory.makeNode(for: type)
             node.position = SCNVector3(
                 Float.random(in: (-binWidth / 2 + 1)...(binWidth / 2 - 1)),
                 3.5 + Float(index / 15) * 1.3,
@@ -162,27 +164,6 @@ final class GameController: NSObject {
             itemNodes.append(node)
             scene.rootNode.addChildNode(node)
         }
-    }
-
-    private func makeItemNode(_ type: ItemType) -> SCNNode {
-        let box = SCNBox(width: 1.1, height: 1.1, length: 1.1, chamferRadius: 0.22)
-        let material = SCNMaterial()
-        material.diffuse.contents = EmojiTexture.image(for: type)
-        material.locksAmbientWithDiffuse = true
-        box.materials = [material]
-
-        let node = SCNNode(geometry: box)
-        node.name = type.rawValue
-
-        let body = SCNPhysicsBody(type: .dynamic, shape: nil)
-        body.mass = 1
-        body.restitution = 0.2
-        body.friction = 0.7
-        body.rollingFriction = 0.4
-        body.angularDamping = 0.4
-        body.damping = 0.15
-        node.physicsBody = body
-        return node
     }
 
     // MARK: - Motion (기울임 = 중력, 흔들기 = 임펄스)
@@ -206,25 +187,30 @@ final class GameController: NSObject {
 
             let ua = data.userAcceleration
             let magnitude = sqrt(ua.x * ua.x + ua.y * ua.y + ua.z * ua.z)
-            if magnitude > 1.1 {
-                self.applyImpulseToAll(strength: Float(min(magnitude, 3.0)))
+            if magnitude > 0.75 {
+                self.applyImpulseToAll(strength: Float(min(magnitude * 1.4, 4.5)))
             }
         }
     }
 
     private func applyImpulseToAll(strength: Float) {
         let now = CACurrentMediaTime()
-        guard now - lastShake > 0.5 else { return }
+        guard now - lastShake > 0.35 else { return }
         lastShake = now
         guard gameState?.phase == .playing else { return }
 
         for node in itemNodes {
             node.physicsBody?.applyForce(
                 SCNVector3(
-                    Float.random(in: -1...1) * strength * 2,
-                    Float.random(in: 1.5...3.5) * strength,
-                    Float.random(in: -1...1) * strength * 2
+                    Float.random(in: -1...1) * strength * 2.5,
+                    Float.random(in: 2.5...5.0) * strength,
+                    Float.random(in: -1...1) * strength * 2.5
                 ),
+                asImpulse: true
+            )
+            node.physicsBody?.applyTorque(
+                SCNVector4(Float.random(in: -1...1), Float.random(in: -1...1),
+                           Float.random(in: -1...1), Float.random(in: 0.5...1.5) * strength),
                 asImpulse: true
             )
         }
@@ -239,13 +225,36 @@ final class GameController: NSObject {
               state.tray.count < state.trayCapacity else { return }
 
         let point = gesture.location(in: scnView)
-        let hits = scnView.hitTest(point, options: nil)
-        for hit in hits {
-            if itemNodes.contains(where: { $0 === hit.node }) {
-                collect(node: hit.node)
-                return
+        // 바운딩 박스 기준 히트테스트 + 탭 지점 주변 샘플링으로 인식률을 높인다
+        let options: [SCNHitTestOption: Any] = [
+            .searchMode: SCNHitTestSearchMode.all.rawValue,
+            .boundingBoxOnly: true,
+            .ignoreHiddenNodes: true,
+        ]
+        let offsets: [CGPoint] = [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 16, y: 0), CGPoint(x: -16, y: 0),
+            CGPoint(x: 0, y: 16), CGPoint(x: 0, y: -16),
+        ]
+        for offset in offsets {
+            let p = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
+            for hit in scnView.hitTest(p, options: options) {
+                if let root = itemRoot(of: hit.node) {
+                    collect(node: root)
+                    return
+                }
             }
         }
+    }
+
+    /// 부품(자식 노드)이 히트되어도 아이템 루트 노드를 찾아 반환한다
+    private func itemRoot(of node: SCNNode) -> SCNNode? {
+        var current: SCNNode? = node
+        while let n = current {
+            if itemNodes.contains(where: { $0 === n }) { return n }
+            current = n.parent
+        }
+        return nil
     }
 
     private func collect(node: SCNNode) {
