@@ -15,10 +15,11 @@ final class GameController: NSObject {
     private var itemNodes: [SCNNode] = []
     private var lastShake: CFTimeInterval = 0
 
-    // 통(빈) 크기 — 세로 화면에 맞춘 깊은 직사각형
-    private let binWidth: Float = 9
-    private let binDepth: Float = 12
-    private let wallHeight: Float = 9
+    // 수조(탱크) 크기 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식)
+    // 폭 = 화면 좌우, 높이 = 화면 상하, 깊이 = 얕은 앞뒤 (아이템 2겹 정도)
+    private let tankWidth: Float = 7
+    private let tankHeight: Float = 13
+    private let tankDepth: Float = 2.6
 
     init(gameState: GameState) {
         self.gameState = gameState
@@ -59,18 +60,12 @@ final class GameController: NSObject {
     private func setupCameraAndLights() {
         scene.background.contents = UIColor(red: 0.55, green: 0.83, blue: 0.93, alpha: 1)
 
-        let target = SCNNode()
-        target.position = SCNVector3(0, 0, 0)
-        scene.rootNode.addChildNode(target)
-
+        // 정면(-Z 방향)을 수평으로 바라보는 카메라 — 수조를 어항처럼 마주본다
         let cameraNode = SCNNode()
         cameraNode.camera = SCNCamera()
-        cameraNode.camera?.fieldOfView = 52
+        cameraNode.camera?.fieldOfView = 55
         cameraNode.camera?.zFar = 120
-        cameraNode.position = SCNVector3(0, 18, 12)
-        let lookAt = SCNLookAtConstraint(target: target)
-        lookAt.isGimbalLockEnabled = true
-        cameraNode.constraints = [lookAt]
+        cameraNode.position = SCNVector3(0, tankHeight * 0.5, 14)
         scene.rootNode.addChildNode(cameraNode)
 
         let ambient = SCNNode()
@@ -86,15 +81,17 @@ final class GameController: NSObject {
         sun.light?.castsShadow = true
         sun.light?.shadowRadius = 6
         sun.light?.shadowColor = UIColor(white: 0, alpha: 0.35)
-        sun.eulerAngles = SCNVector3(-Float.pi / 2.6, -0.4, 0)
+        sun.eulerAngles = SCNVector3(-0.5, -0.3, 0)
         scene.rootNode.addChildNode(sun)
     }
 
     private func setupBin() {
-        // 모래색 바닥
-        let floorGeometry = SCNBox(width: CGFloat(binWidth) + 1.4,
+        let wallTall: Float = 22
+
+        // 모래색 바닥 (화면 하단)
+        let floorGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
                                    height: 1,
-                                   length: CGFloat(binDepth) + 1.4,
+                                   length: CGFloat(tankDepth) + 1.6,
                                    chamferRadius: 0.15)
         floorGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.95, green: 0.83, blue: 0.60, alpha: 1)
         let floor = SCNNode(geometry: floorGeometry)
@@ -104,19 +101,45 @@ final class GameController: NSObject {
         floor.physicsBody?.restitution = 0.4
         scene.rootNode.addChildNode(floor)
 
-        // 반투명 유리벽 4면
-        addWall(size: (0.5, wallHeight, binDepth + 1.4), position: SCNVector3(binWidth / 2 + 0.25, wallHeight / 2, 0))
-        addWall(size: (0.5, wallHeight, binDepth + 1.4), position: SCNVector3(-binWidth / 2 - 0.25, wallHeight / 2, 0))
-        addWall(size: (binWidth + 1.4, wallHeight, 0.5), position: SCNVector3(0, wallHeight / 2, binDepth / 2 + 0.25))
-        addWall(size: (binWidth + 1.4, wallHeight, 0.5), position: SCNVector3(0, wallHeight / 2, -binDepth / 2 - 0.25))
+        // 노란 모래빛 뒷벽 — 화면 배경 역할
+        let backGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
+                                  height: CGFloat(wallTall),
+                                  length: 0.5,
+                                  chamferRadius: 0)
+        backGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.99, green: 0.90, blue: 0.70, alpha: 1)
+        let back = SCNNode(geometry: backGeometry)
+        back.position = SCNVector3(0, wallTall / 2 - 1, -tankDepth / 2 - 0.25)
+        back.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+        back.physicsBody?.restitution = 0.4
+        back.castsShadow = false
+        scene.rootNode.addChildNode(back)
 
-        // 흔들었을 때 아이템이 밖으로 날아가지 않게 막는 투명 천장
-        let ceilingGeometry = SCNBox(width: CGFloat(binWidth) + 1.4,
+        // 좌우 반투명 유리벽
+        addWall(size: (0.5, wallTall, tankDepth + 1.6),
+                position: SCNVector3(tankWidth / 2 + 0.25, wallTall / 2 - 1, 0))
+        addWall(size: (0.5, wallTall, tankDepth + 1.6),
+                position: SCNVector3(-tankWidth / 2 - 0.25, wallTall / 2 - 1, 0))
+
+        // 보이지 않는 앞 유리 — 아이템이 카메라 쪽으로 쏟아지지 않게 막는다
+        let frontGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
+                                   height: CGFloat(wallTall),
+                                   length: 0.4,
+                                   chamferRadius: 0)
+        let front = SCNNode(geometry: frontGeometry)
+        front.position = SCNVector3(0, wallTall / 2 - 1, tankDepth / 2 + 0.2)
+        front.opacity = 0
+        front.castsShadow = false
+        front.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+        front.physicsBody?.restitution = 0.4
+        scene.rootNode.addChildNode(front)
+
+        // 흔들었을 때 아이템이 위로 날아가지 않게 막는 투명 천장
+        let ceilingGeometry = SCNBox(width: CGFloat(tankWidth) + 1.6,
                                      height: 0.5,
-                                     length: CGFloat(binDepth) + 1.4,
+                                     length: CGFloat(tankDepth) + 1.6,
                                      chamferRadius: 0)
         let ceiling = SCNNode(geometry: ceilingGeometry)
-        ceiling.position = SCNVector3(0, wallHeight + 8, 0)
+        ceiling.position = SCNVector3(0, wallTall - 2, 0)
         ceiling.opacity = 0
         ceiling.castsShadow = false
         ceiling.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
@@ -153,9 +176,9 @@ final class GameController: NSObject {
         for (index, type) in bag.enumerated() {
             let node = ItemNodeFactory.makeNode(for: type)
             node.position = SCNVector3(
-                Float.random(in: (-binWidth / 2 + 1)...(binWidth / 2 - 1)),
-                3.5 + Float(index / 15) * 1.3,
-                Float.random(in: (-binDepth / 2 + 1)...(binDepth / 2 - 1))
+                Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8)),
+                5 + Float(index / 10) * 1.3,
+                Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
             )
             node.eulerAngles = SCNVector3(
                 Float.random(in: 0...Float.pi),
@@ -175,15 +198,17 @@ final class GameController: NSObject {
         motion.startDeviceMotionUpdates(to: .main) { [weak self] data, _ in
             guard let self, let data else { return }
 
-            // 디바이스 중력 (gx, gy, gz) → 씬 중력.
-            // 수평 성분은 1.6배 증폭해 반응감을 살리고,
-            // 하방 성분은 최소치를 유지해 아이템이 항상 바닥 쪽으로 정착하게 한다.
+            // 갈매기 게임식 정면 뷰 매핑: 화면 좌우 = 씬 X, 화면 상하 = 씬 Y.
+            // 폰을 세워 든 상태에서 중력이 화면 아래(-Y)로 향하고,
+            // 좌우로 기울이면 실제 지구 중력 방향 그대로 아이템이 쏠린다.
+            // 앞뒤 기울임(gz)은 얕은 수조 깊이에 맞게 약하게 반영하고
+            // 살짝 뒷벽 쪽으로 눌러 아이템이 앞유리에 붙지 않게 한다.
             let g = data.gravity
             let k = 9.8
             self.scene.physicsWorld.gravity = SCNVector3(
-                Float(g.x * k * 1.6),
-                Float(min(g.z * k, -2.0)),
-                Float(-g.y * k * 1.6)
+                Float(g.x * k * 1.5),
+                Float(g.y * k),
+                Float(g.z * k * 0.6 - 0.8)
             )
 
             let ua = data.userAcceleration
@@ -267,7 +292,7 @@ final class GameController: NSObject {
 
         // 화면 아래(트레이 방향)로 날아가며 사라지는 연출
         let fly = SCNAction.group([
-            SCNAction.move(to: SCNVector3(0, 5, 15), duration: 0.28),
+            SCNAction.move(to: SCNVector3(0, 0, 10), duration: 0.28),
             SCNAction.scale(to: 0.15, duration: 0.28),
             SCNAction.fadeOut(duration: 0.28)
         ])
