@@ -33,10 +33,12 @@ final class GameController: NSObject {
         scnView.isPlaying = true
         scnView.backgroundColor = .clear
 
-        scene.physicsWorld.gravity = SCNVector3(0, -9.8, 0)
+        // 기본 중력은 끄고(약한 뒷벽 밀착만 유지) 화면 중앙의 방사형 중력장이 아이템을 끌어모은다
+        scene.physicsWorld.gravity = SCNVector3(0, 0, -2.2)
 
         setupCameraAndLights()
         setupBin()
+        setupCenterGravityField()
         spawnItems(for: gameState.level)
         ItemThumbnail.prewarm(types: gameState.level.itemTypes)
         startMotionUpdates()
@@ -86,6 +88,19 @@ final class GameController: NSObject {
         sun.light?.shadowColor = UIColor(white: 0, alpha: 0.35)
         sun.eulerAngles = SCNVector3(-0.5, -0.3, 0)
         scene.rootNode.addChildNode(sun)
+    }
+
+    /// 화면(박스) 정중앙으로 아이템을 끌어당기는 방사형 중력장.
+    /// 아이템들이 중앙에 덩어리로 뭉치고, 기울이면 덩어리째 쏠린다 (갈매기 게임식).
+    private func setupCenterGravityField() {
+        let field = SCNPhysicsField.radialGravity()
+        field.strength = 5.5
+        field.falloffExponent = 0      // 거리와 무관하게 일정한 힘
+        field.minimumDistance = 0.5    // 중심 근처 떨림 방지
+        let fieldNode = SCNNode()
+        fieldNode.physicsField = field
+        fieldNode.position = SCNVector3(0, boxCenterY, 0)
+        scene.rootNode.addChildNode(fieldNode)
     }
 
     private func setupBin() {
@@ -196,24 +211,17 @@ final class GameController: NSObject {
         motion.startDeviceMotionUpdates(to: .main) { [weak self] data, _ in
             guard let self, let data else { return }
 
-            // 갈매기 게임식 매핑: 중력의 "화면 평면(x,y) 성분"만 사용하고
-            // 크기를 항상 1g로 정규화한다. 폰을 뒤로 눕혀 들어도 중력이
-            // 언제나 풀 파워로 화면 아래(중앙 하단)를 향하고,
-            // 좌우로 기울인 만큼만 방향이 회전한다.
+            // 아이템은 방사형 중력장이 화면 중앙으로 끌어모으고,
+            // 기기 기울임은 균일 중력으로 더해져 덩어리째 그 방향으로 쏠리게 한다.
+            // (좌우 기울임 = X, 위아래 기울임은 세워 든 자세 기준의 변화량만 Y에 반영)
             // z축은 상수 힘으로 뒷벽에 살짝 붙여 얕은 수조에서 안정시킨다.
             let g = data.gravity
             let k = 9.8
-            let planar = sqrt(g.x * g.x + g.y * g.y)
-            if planar > 0.08 {
-                self.scene.physicsWorld.gravity = SCNVector3(
-                    Float(g.x / planar * k * 1.2),
-                    Float(g.y / planar * k),
-                    -2.2
-                )
-            } else {
-                // 폰이 거의 수평(테이블 위 등): 화면 아래로 기본 중력
-                self.scene.physicsWorld.gravity = SCNVector3(0, -9.8, -2.2)
-            }
+            self.scene.physicsWorld.gravity = SCNVector3(
+                Float(g.x * k * 0.9),
+                0,
+                -2.2
+            )
 
             let ua = data.userAcceleration
             let magnitude = sqrt(ua.x * ua.x + ua.y * ua.y + ua.z * ua.z)
@@ -230,11 +238,12 @@ final class GameController: NSObject {
         guard gameState?.phase == .playing else { return }
 
         for node in itemNodes {
+            // 중앙 덩어리가 사방으로 흩어졌다가 다시 모이도록 전방향 대칭 임펄스
             node.physicsBody?.applyForce(
                 SCNVector3(
-                    Float.random(in: -1...1) * strength * 2.5,
-                    Float.random(in: 2.5...5.0) * strength,
-                    Float.random(in: -1...1) * strength * 2.5
+                    Float.random(in: -1...1) * strength * 3.0,
+                    Float.random(in: -1...1) * strength * 3.0,
+                    Float.random(in: -1...1) * strength * 1.2
                 ),
                 asImpulse: true
             )
