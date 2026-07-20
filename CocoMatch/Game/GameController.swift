@@ -34,6 +34,7 @@ final class GameController: NSObject {
         setupCameraAndLights()
         setupBin()
         spawnItems(for: gameState.level)
+        ItemThumbnail.prewarm(types: gameState.level.itemTypes)
         startMotionUpdates()
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))

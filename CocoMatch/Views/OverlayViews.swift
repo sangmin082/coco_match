@@ -12,8 +12,10 @@ struct TrayView: View {
                         .fill(.white.opacity(0.9))
                         .shadow(color: .black.opacity(0.15), radius: 3, y: 2)
                     if index < gameState.tray.count {
-                        Text(gameState.tray[index].emoji)
-                            .font(.system(size: 28))
+                        Image(uiImage: ItemThumbnail.image(for: gameState.tray[index]))
+                            .resizable()
+                            .scaledToFit()
+                            .padding(3)
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
