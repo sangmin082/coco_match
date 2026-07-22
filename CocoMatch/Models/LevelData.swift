@@ -13,7 +13,7 @@ struct LevelData {
 
     static func level(_ n: Int) -> LevelData {
         let all = ItemType.allCases
-        let typeCount = min(3 + (n - 1) / 3, 10)
+        let typeCount = min(3 + (n - 1) / 3, all.count)
         let triples = min(2 + (n - 1) / 5, 3)
         let total = typeCount * triples * 3
         return LevelData(

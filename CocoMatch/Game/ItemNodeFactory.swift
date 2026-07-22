@@ -147,22 +147,27 @@ enum ItemNodeFactory {
         return SCNBox(width: 1.05, height: 0.75, length: 0.6, chamferRadius: 0.2)
     }
 
-    /// 🍜 라면: 그릇 + 면발 + 계란 + 어묵
+    /// 🍜 컵라면: 위가 넓은 컵 + 빨간 띠 + 은박 뚜껑(살짝 열림) + 삐져나온 면발
     private static func buildRamen(in parent: SCNNode) -> SCNGeometry {
-        part(SCNCylinder(radius: 0.50, height: 0.42), riceWhite,
+        let cup = UIColor(red: 0.97, green: 0.94, blue: 0.88, alpha: 1)
+        let foil = UIColor(red: 0.82, green: 0.83, blue: 0.86, alpha: 1)
+        // 위가 넓은 컵 몸통
+        part(SCNCone(topRadius: 0.38, bottomRadius: 0.28, height: 0.72), cup,
              position: SCNVector3(0, -0.10, 0), in: parent)
-        part(SCNTorus(ringRadius: 0.48, pipeRadius: 0.05), sauceRed,
-             position: SCNVector3(0, 0.10, 0), in: parent)
-        part(SCNTorus(ringRadius: 0.28, pipeRadius: 0.11), cheeseYellow,
-             position: SCNVector3(0, 0.17, 0), in: parent)
-        part(SCNSphere(radius: 0.13), riceWhite,
-             position: SCNVector3(0.20, 0.26, 0.10), in: parent)
-        part(SCNSphere(radius: 0.07), cheeseYellow,
-             position: SCNVector3(0.20, 0.33, 0.10), in: parent)
-        part(SCNCylinder(radius: 0.12, height: 0.06),
-             UIColor(red: 0.98, green: 0.75, blue: 0.80, alpha: 1),
-             position: SCNVector3(-0.22, 0.26, -0.05), in: parent)
-        return SCNCylinder(radius: 0.53, height: 0.72)
+        // 빨간 브랜드 띠
+        part(SCNCone(topRadius: 0.365, bottomRadius: 0.325, height: 0.22), sauceRed,
+             position: SCNVector3(0, -0.05, 0), in: parent)
+        // 컵 상단 테두리
+        part(SCNTorus(ringRadius: 0.38, pipeRadius: 0.035), cup,
+             position: SCNVector3(0, 0.26, 0), in: parent)
+        // 살짝 들린 은박 뚜껑
+        part(SCNCylinder(radius: 0.38, height: 0.04), foil,
+             position: SCNVector3(0, 0.34, -0.04),
+             euler: SCNVector3(-0.35, 0, 0), in: parent)
+        // 틈으로 삐져나온 면발
+        part(SCNTorus(ringRadius: 0.16, pipeRadius: 0.06), cheeseYellow,
+             position: SCNVector3(0, 0.30, 0.12), in: parent)
+        return SCNCone(topRadius: 0.42, bottomRadius: 0.30, height: 1.0)
     }
 
     /// 🥟 만두: 통통한 베이지 몸통 + 주름 3개
