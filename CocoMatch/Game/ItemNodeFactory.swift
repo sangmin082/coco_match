@@ -12,6 +12,13 @@ enum ItemNodeFactory {
 
         let collision: SCNGeometry
         switch type {
+        case .coconut: collision = buildCoconut(in: node)
+        case .apple: collision = buildApple(in: node)
+        case .banana: collision = buildBanana(in: node)
+        case .strawberry: collision = buildStrawberry(in: node)
+        case .orange: collision = buildOrange(in: node)
+        case .watermelon: collision = buildWatermelon(in: node)
+        case .pineapple: collision = buildPineapple(in: node)
         case .chicken: collision = buildChicken(in: node)
         case .pizza: collision = buildPizza(in: node)
         case .burger: collision = buildBurger(in: node)
@@ -70,8 +77,129 @@ enum ItemNodeFactory {
     private static let cheeseYellow = UIColor(red: 0.98, green: 0.82, blue: 0.35, alpha: 1)
     private static let riceWhite = UIColor(red: 0.98, green: 0.97, blue: 0.94, alpha: 1)
     private static let seaweedBlack = UIColor(red: 0.12, green: 0.14, blue: 0.10, alpha: 1)
+    private static let coconutBrown = UIColor(red: 0.45, green: 0.31, blue: 0.21, alpha: 1)
+    private static let darkBrown = UIColor(red: 0.28, green: 0.19, blue: 0.12, alpha: 1)
+    private static let leafGreen = UIColor(red: 0.27, green: 0.63, blue: 0.34, alpha: 1)
 
-    // MARK: - Items
+    // MARK: - Fruits (초반 레벨)
+
+    /// 🥥 코코넛: 갈색 구 + 위쪽 반점 3개
+    private static func buildCoconut(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.55), coconutBrown, in: parent)
+        let spots: [SCNVector3] = [
+            SCNVector3(0.0, 0.50, 0.25),
+            SCNVector3(-0.22, 0.48, 0.12),
+            SCNVector3(0.22, 0.48, 0.12),
+        ]
+        for p in spots {
+            part(SCNSphere(radius: 0.09), darkBrown, position: p, in: parent)
+        }
+        return SCNSphere(radius: 0.55)
+    }
+
+    /// 🍎 사과: 빨간 구 + 꼭지 + 잎
+    private static func buildApple(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.50), UIColor(red: 0.88, green: 0.18, blue: 0.20, alpha: 1), in: parent)
+        part(SCNCylinder(radius: 0.045, height: 0.24), darkBrown,
+             position: SCNVector3(0, 0.56, 0),
+             euler: SCNVector3(0, 0, 0.15), in: parent)
+        part(SCNCapsule(capRadius: 0.07, height: 0.30), leafGreen,
+             position: SCNVector3(0.15, 0.56, 0),
+             euler: SCNVector3(0, 0, 1.1), in: parent)
+        return SCNSphere(radius: 0.52)
+    }
+
+    /// 🍌 바나나: 캡슐 3개를 호 모양으로 배치 + 양끝 꼭지
+    private static func buildBanana(in parent: SCNNode) -> SCNGeometry {
+        let yellow = UIColor(red: 1.0, green: 0.84, blue: 0.30, alpha: 1)
+        part(SCNCapsule(capRadius: 0.17, height: 0.62), yellow,
+             euler: SCNVector3(0, 0, Float.pi / 2), in: parent)
+        part(SCNCapsule(capRadius: 0.16, height: 0.55), yellow,
+             position: SCNVector3(-0.40, 0.14, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 + 0.6), in: parent)
+        part(SCNCapsule(capRadius: 0.16, height: 0.55), yellow,
+             position: SCNVector3(0.40, 0.14, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 - 0.6), in: parent)
+        part(SCNSphere(radius: 0.07), darkBrown, position: SCNVector3(-0.62, 0.30, 0), in: parent)
+        part(SCNSphere(radius: 0.07), darkBrown, position: SCNVector3(0.62, 0.30, 0), in: parent)
+        return SCNBox(width: 1.4, height: 0.6, length: 0.4, chamferRadius: 0.15)
+    }
+
+    /// 🍓 딸기: 붉은 역원뿔 + 씨앗 + 꼭지잎
+    private static func buildStrawberry(in parent: SCNNode) -> SCNGeometry {
+        let red = UIColor(red: 0.89, green: 0.20, blue: 0.27, alpha: 1)
+        part(SCNCone(topRadius: 0.45, bottomRadius: 0.06, height: 0.85), red, in: parent)
+        for i in 0..<6 {
+            let angle = Float(i) / 6 * 2 * Float.pi
+            let y: Float = i % 2 == 0 ? 0.12 : -0.10
+            let r: Float = i % 2 == 0 ? 0.34 : 0.26
+            part(SCNSphere(radius: 0.035), riceWhite,
+                 position: SCNVector3(r * cos(angle), y, r * sin(angle)), in: parent)
+        }
+        for i in 0..<3 {
+            let angle = Float(i) / 3 * 2 * Float.pi
+            part(SCNCone(topRadius: 0, bottomRadius: 0.09, height: 0.28), leafGreen,
+                 position: SCNVector3(0.14 * cos(angle), 0.48, 0.14 * sin(angle)),
+                 euler: SCNVector3(0.4 * sin(angle), 0, 0.4 * cos(angle)), in: parent)
+        }
+        return SCNCone(topRadius: 0.45, bottomRadius: 0.06, height: 0.85)
+    }
+
+    /// 🍊 오렌지: 주황 구 + 꼭지 + 잎
+    private static func buildOrange(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.50), UIColor(red: 0.98, green: 0.60, blue: 0.15, alpha: 1), in: parent)
+        part(SCNCylinder(radius: 0.05, height: 0.14), leafGreen,
+             position: SCNVector3(0, 0.54, 0), in: parent)
+        part(SCNCapsule(capRadius: 0.08, height: 0.32), leafGreen,
+             position: SCNVector3(0.17, 0.52, 0),
+             euler: SCNVector3(0, 0, 1.2), in: parent)
+        return SCNSphere(radius: 0.52)
+    }
+
+    /// 🍉 수박: 초록 줄무늬 텍스처 구
+    private static func buildWatermelon(in parent: SCNNode) -> SCNGeometry {
+        let sphere = SCNSphere(radius: 0.55)
+        let m = SCNMaterial()
+        m.diffuse.contents = watermelonTexture
+        m.specular.contents = UIColor(white: 1, alpha: 0.35)
+        sphere.materials = [m]
+        let n = SCNNode(geometry: sphere)
+        parent.addChildNode(n)
+        return SCNSphere(radius: 0.55)
+    }
+
+    private static let watermelonTexture: UIImage = {
+        let size = CGSize(width: 256, height: 128)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { ctx in
+            UIColor(red: 0.28, green: 0.66, blue: 0.33, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            UIColor(red: 0.15, green: 0.44, blue: 0.21, alpha: 1).setFill()
+            for i in 0..<8 {
+                ctx.fill(CGRect(x: CGFloat(i) * 32 + 9, y: 0, width: 14, height: 128))
+            }
+        }
+    }()
+
+    /// 🍍 파인애플: 노란 캡슐 몸통 + 초록 잎
+    private static func buildPineapple(in parent: SCNNode) -> SCNGeometry {
+        let body = UIColor(red: 0.95, green: 0.72, blue: 0.25, alpha: 1)
+        part(SCNCapsule(capRadius: 0.40, height: 1.0), body,
+             position: SCNVector3(0, -0.08, 0), in: parent)
+        let leafPositions: [(SCNVector3, SCNVector3)] = [
+            (SCNVector3(0.10, 0.55, 0), SCNVector3(0, 0, -0.35)),
+            (SCNVector3(-0.10, 0.55, 0), SCNVector3(0, 0, 0.35)),
+            (SCNVector3(0, 0.55, 0.10), SCNVector3(0.35, 0, 0)),
+            (SCNVector3(0, 0.60, -0.05), SCNVector3(-0.15, 0, 0)),
+        ]
+        for (p, e) in leafPositions {
+            part(SCNCone(topRadius: 0, bottomRadius: 0.10, height: 0.42), leafGreen,
+                 position: p, euler: e, in: parent)
+        }
+        return SCNCapsule(capRadius: 0.42, height: 1.25)
+    }
+
+    // MARK: - Snacks (야식)
 
     /// 🍗 치킨 다리: 튀김옷 몸통 + 흰 뼈 + 뼈끝 혹 2개
     private static func buildChicken(in parent: SCNNode) -> SCNGeometry {
