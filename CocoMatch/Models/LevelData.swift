@@ -9,7 +9,7 @@ struct LevelData {
 
     var totalItems: Int { itemTypes.count * triplesPerType * 3 }
 
-    static let maxLevel = 50
+    static let maxLevel = 100
 
     static func level(_ n: Int) -> LevelData {
         let all = ItemType.allCases

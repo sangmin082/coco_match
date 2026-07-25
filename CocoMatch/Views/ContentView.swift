@@ -73,6 +73,19 @@ struct MenuView: View {
                         .shadow(color: .black.opacity(0.2), radius: 4, y: 3)
                 }
                 .padding(.horizontal, 40)
+
+                // 테스트용: 잠금 해제 없이 최고 난이도(레벨 100)로 바로 입장
+                Button {
+                    onSelect(LevelData.maxLevel)
+                } label: {
+                    Text("🧪 레벨 \(LevelData.maxLevel) 테스트")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(.purple.opacity(0.8), in: RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal, 60)
                 .padding(.bottom, 10)
 
                 ScrollView {
