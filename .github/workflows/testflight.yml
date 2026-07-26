@@ -89,6 +89,19 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
+      # 무서명 아카이브의 내장 프레임워크(광고 SDK 등)에 ad-hoc 서명을 입혀
+      # 정상 서명 구조를 만들어준다. export가 전체를 배포용으로 재서명한다.
+      - name: Ad-hoc sign app and embedded frameworks
+        run: |
+          APP="$ARCHIVE_PATH/Products/Applications/CocoMatch.app"
+          if [ -d "$APP/Frameworks" ]; then
+            for fw in "$APP/Frameworks"/*.framework; do
+              /usr/bin/codesign --force --sign - --timestamp=none "$fw"
+            done
+          fi
+          /usr/bin/codesign --force --sign - --timestamp=none "$APP"
+          /usr/bin/codesign -dv "$APP" || true
+
       - name: Export & upload to TestFlight
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
