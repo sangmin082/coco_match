@@ -19,7 +19,7 @@ final class GameController: NSObject {
     // 상단 HUD와 하단 트레이/부스터 UI에 겹치지 않도록 화면 중앙 영역만 사용한다.
     // 카메라 기준 화면 세로 가시 범위는 대략 y -0.8 ~ 13.8.
     private let tankWidth: Float = 7
-    private let tankDepth: Float = 3.2
+    private let tankDepth: Float = 3.8
     private let boxBottom: Float = 2.4   // 박스 바닥 높이 (트레이/부스터 위)
     private let boxTop: Float = 10.6     // 박스 천장 높이 (HUD 아래)
     private var boxCenterY: Float { (boxBottom + boxTop) / 2 }

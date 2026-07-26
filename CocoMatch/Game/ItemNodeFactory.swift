@@ -33,8 +33,12 @@ enum ItemNodeFactory {
         case .onigiri: collision = buildOnigiri(in: node)
         }
 
-        let body = SCNPhysicsBody(type: .dynamic,
-                                  shape: SCNPhysicsShape(geometry: collision, options: nil))
+        // 고레벨에서 아이템이 더 많이 들어가도록 전체 크기를 10% 축소
+        let itemScale: CGFloat = 0.9
+        node.scale = SCNVector3(Float(itemScale), Float(itemScale), Float(itemScale))
+        let shape = SCNPhysicsShape(geometry: collision,
+                                    options: [SCNPhysicsShape.Option.scale: itemScale])
+        let body = SCNPhysicsBody(type: .dynamic, shape: shape)
         body.mass = 1
         body.restitution = 0.5
         body.friction = 0.6
