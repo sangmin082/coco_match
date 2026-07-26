@@ -20,6 +20,7 @@ struct GameView: View {
     let onRetry: () -> Void
 
     @StateObject private var gameState: GameState
+    @ObservedObject private var ads = AdManager.shared
     @State private var controller: GameController?
     @AppStorage("unlockedLevel") private var unlockedLevel = 1
 
@@ -140,6 +141,23 @@ struct GameView: View {
             BoosterButton(emoji: "⏰", title: "+30초", count: gameState.timeBoostLeft) {
                 gameState.useTimeBoost()
             }
+            // 부스터를 모두 쓰면 광고 보고 충전
+            if gameState.shuffleLeft == 0, gameState.magnetLeft == 0,
+               gameState.timeBoostLeft == 0, ads.boosterAdReady {
+                Button {
+                    AdManager.shared.showBoosterAd { [weak gameState] in
+                        gameState?.refillBoosters()
+                    }
+                } label: {
+                    VStack(spacing: 2) {
+                        Text("📺").font(.system(size: 26))
+                        Text("충전").font(.caption2.bold())
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: 64, height: 58)
+                    .background(.green.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
+                }
+            }
         }
     }
 
@@ -152,7 +170,10 @@ struct GameView: View {
             ResultOverlay(
                 title: "레벨 클리어! 🎉",
                 subtitle: "점수 \(gameState.score)점",
-                primary: ("다음 레벨", onNext),
+                primary: ("다음 레벨", {
+                    AdManager.shared.registerLevelCompleted()
+                    onNext()
+                }),
                 secondary: ("메뉴로", onExit)
             )
         case .lost:
@@ -160,7 +181,14 @@ struct GameView: View {
                 title: gameState.timeRemaining == 0 ? "시간 초과 ⏰" : "트레이가 가득 찼어요 😵",
                 subtitle: "다시 도전해 보세요!",
                 primary: ("재도전", onRetry),
-                secondary: ("메뉴로", onExit)
+                secondary: ("메뉴로", onExit),
+                extra: (ads.continueAdReady && !gameState.usedRevive)
+                    ? ("📺 광고 보고 이어하기", { [weak gameState] in
+                        AdManager.shared.showContinueAd {
+                            gameState?.reviveWithAd()
+                        }
+                    })
+                    : nil
             )
         case .paused:
             ResultOverlay(

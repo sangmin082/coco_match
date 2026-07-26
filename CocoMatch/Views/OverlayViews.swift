@@ -62,6 +62,7 @@ struct ResultOverlay: View {
     let subtitle: String
     let primary: (String, () -> Void)
     let secondary: (String, () -> Void)
+    var extra: (String, () -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -74,6 +75,17 @@ struct ResultOverlay: View {
                 Text(subtitle)
                     .font(.headline)
                     .foregroundStyle(.secondary)
+
+                if let extra {
+                    Button(action: extra.1) {
+                        Text(extra.0)
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(.green, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                }
 
                 Button(action: primary.1) {
                     Text(primary.0)

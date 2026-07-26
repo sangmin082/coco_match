@@ -22,6 +22,7 @@ final class GameState: ObservableObject {
     @Published var shuffleLeft = 3
     @Published var magnetLeft = 2
     @Published var timeBoostLeft = 1
+    @Published var usedRevive = false
 
     private var timerCancellable: AnyCancellable?
 
@@ -76,6 +77,25 @@ final class GameState: ObservableObject {
     func togglePause() {
         if phase == .playing { phase = .paused }
         else if phase == .paused { phase = .playing }
+    }
+
+    /// 보상 광고 시청 후 이어하기: 트레이 1칸 비우기 + 15초 추가 (판당 1회)
+    func reviveWithAd() {
+        guard phase == .lost, !usedRevive else { return }
+        usedRevive = true
+        if !tray.isEmpty {
+            withAnimation(.spring(duration: 0.3)) { tray.removeLast() }
+        }
+        timeRemaining += 15
+        phase = .playing
+        startTimer()
+    }
+
+    /// 보상 광고 시청 후 부스터 충전
+    func refillBoosters() {
+        shuffleLeft += 2
+        magnetLeft += 1
+        timeBoostLeft += 1
     }
 
     private func finish(won: Bool) {
