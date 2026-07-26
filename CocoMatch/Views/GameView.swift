@@ -59,6 +59,7 @@ struct GameView: View {
             if controller == nil {
                 controller = GameController(gameState: gameState)
             }
+            AdManager.shared.reloadIfNeeded()
         }
         .onChange(of: gameState.phase) { _, phase in
             controller?.setPaused(phase != .playing)

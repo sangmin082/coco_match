@@ -9,16 +9,25 @@ import UIKit
 final class AdManager: NSObject, ObservableObject, GADFullScreenContentDelegate {
     static let shared = AdManager()
 
-    #if DEBUG
-    // 개발/TestFlight 검증용 — 구글 공식 테스트 광고 단위
-    private let continueAdUnitID = "ca-app-pub-3940256099942544/1712485313"
-    private let boosterAdUnitID = "ca-app-pub-3940256099942544/1712485313"
-    private let interstitialAdUnitID = "ca-app-pub-3940256099942544/4411468910"
-    #else
-    private let continueAdUnitID = "ca-app-pub-1063542820867439/3020443798"
-    private let boosterAdUnitID = "ca-app-pub-1063542820867439/6068324677"
-    private let interstitialAdUnitID = "ca-app-pub-1063542820867439/5032509406"
-    #endif
+    /// 디버그 빌드와 TestFlight(샌드박스 영수증) 빌드에서는 구글 테스트 광고를 사용한다.
+    /// 실제 광고 단위는 앱스토어 정식 릴리즈에서만 사용 (개발 중 실광고 노출은 계정 정지 사유).
+    private static let useTestAds: Bool = {
+        #if DEBUG
+        return true
+        #else
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        #endif
+    }()
+
+    private let continueAdUnitID = AdManager.useTestAds
+        ? "ca-app-pub-3940256099942544/1712485313"
+        : "ca-app-pub-1063542820867439/3020443798"
+    private let boosterAdUnitID = AdManager.useTestAds
+        ? "ca-app-pub-3940256099942544/1712485313"
+        : "ca-app-pub-1063542820867439/6068324677"
+    private let interstitialAdUnitID = AdManager.useTestAds
+        ? "ca-app-pub-3940256099942544/4411468910"
+        : "ca-app-pub-1063542820867439/5032509406"
 
     @Published var continueAdReady = false
     @Published var boosterAdReady = false
@@ -46,6 +55,11 @@ final class AdManager: NSObject, ObservableObject, GADFullScreenContentDelegate 
         loadInterstitialAd()
     }
 
+    /// 아직 로드되지 않은 광고가 있으면 다시 로드한다 (레벨 진입 시 등)
+    func reloadIfNeeded() {
+        loadAds()
+    }
+
     private func loadContinueAd() {
         guard continueAd == nil else { return }
         GADRewardedAd.load(withAdUnitID: continueAdUnitID, request: GADRequest()) { [weak self] ad, _ in
@@ -54,6 +68,7 @@ final class AdManager: NSObject, ObservableObject, GADFullScreenContentDelegate 
             DispatchQueue.main.async {
                 self.continueAd = ad
                 self.continueAdReady = ad != nil
+                if ad == nil { self.scheduleRetry { $0.loadContinueAd() } }
             }
         }
     }
@@ -66,6 +81,7 @@ final class AdManager: NSObject, ObservableObject, GADFullScreenContentDelegate 
             DispatchQueue.main.async {
                 self.boosterAd = ad
                 self.boosterAdReady = ad != nil
+                if ad == nil { self.scheduleRetry { $0.loadBoosterAd() } }
             }
         }
     }
@@ -77,7 +93,16 @@ final class AdManager: NSObject, ObservableObject, GADFullScreenContentDelegate 
             ad?.fullScreenContentDelegate = self
             DispatchQueue.main.async {
                 self.interstitialAd = ad
+                if ad == nil { self.scheduleRetry { $0.loadInterstitialAd() } }
             }
+        }
+    }
+
+    /// 로드 실패 시 30초 뒤 재시도 (네트워크 일시 장애/no-fill 대응)
+    private func scheduleRetry(_ retry: @escaping (AdManager) -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
+            guard let self else { return }
+            retry(self)
         }
     }
 
