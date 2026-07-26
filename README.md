@@ -8,6 +8,11 @@
 
 자세한 기획은 [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) 참고.
 
+## 🚀 앱스토어 출시
+
+출시 제출 절차와 복붙용 메타데이터는 **[docs/APP_STORE_SUBMISSION.md](docs/APP_STORE_SUBMISSION.md)** 참고.
+개인정보 처리방침: [docs/privacy-policy.html](docs/privacy-policy.html) (GitHub Pages로 호스팅)
+
 ## 📲 TestFlight 자동 배포
 
 `main` 또는 `claude/**` 브랜치에 푸시하면 GitHub Actions가 자동으로 빌드해서 TestFlight에 업로드합니다

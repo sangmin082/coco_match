@@ -9,15 +9,9 @@ import UIKit
 final class AdManager: NSObject, ObservableObject, GADFullScreenContentDelegate {
     static let shared = AdManager()
 
-    /// 디버그 빌드와 TestFlight(샌드박스 영수증) 빌드에서는 구글 테스트 광고를 사용한다.
+    /// 디버그 빌드와 TestFlight 빌드에서는 구글 테스트 광고를 사용한다.
     /// 실제 광고 단위는 앱스토어 정식 릴리즈에서만 사용 (개발 중 실광고 노출은 계정 정지 사유).
-    private static let useTestAds: Bool = {
-        #if DEBUG
-        return true
-        #else
-        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
-        #endif
-    }()
+    private static let useTestAds = AppEnvironment.isTestBuild
 
     private let continueAdUnitID = AdManager.useTestAds
         ? "ca-app-pub-3940256099942544/1712485313"
