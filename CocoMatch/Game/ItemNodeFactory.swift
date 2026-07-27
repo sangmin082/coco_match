@@ -874,8 +874,8 @@ enum ItemNodeFactory {
     /// 🥭 망고: 붉은빛에서 노랑으로 물드는 타원
     private static func buildMango(in parent: SCNNode) -> SCNGeometry {
         part(SCNSphere(radius: 0.44), mangoTexture,
-             scale: SCNVector3(1.2, 0.95, 0.85),
-             euler: SCNVector3(0, 0, 0.25), gloss: 0.55, in: parent)
+             euler: SCNVector3(0, 0, 0.25),
+             scale: SCNVector3(1.2, 0.95, 0.85), gloss: 0.55, in: parent)
         return SCNSphere(radius: 0.5)
     }
 
@@ -901,8 +901,8 @@ enum ItemNodeFactory {
             part(SCNSphere(radius: 0.14),
                  UIColor(red: 0.42, green: 0.52, blue: 0.24, alpha: 1),
                  position: SCNVector3(0.14 * cos(angle), 0.38, 0.14 * sin(angle)),
-                 scale: SCNVector3(1, 0.25, 0.55),
-                 euler: SCNVector3(0, -angle, 0), gloss: 0.35, in: parent)
+                 euler: SCNVector3(0, -angle, 0),
+                 scale: SCNVector3(1, 0.25, 0.55), gloss: 0.35, in: parent)
         }
         part(SCNCylinder(radius: 0.035, height: 0.14), darkBrown,
              position: SCNVector3(0, 0.44, 0), gloss: 0.2, in: parent)
@@ -986,8 +986,8 @@ enum ItemNodeFactory {
             let angle = Float(i) / 5 * 2 * Float.pi
             part(SCNSphere(radius: 0.13), leafGreen,
                  position: SCNVector3(0.15 * cos(angle), 0.38, 0.15 * sin(angle)),
-                 scale: SCNVector3(1, 0.22, 0.4),
-                 euler: SCNVector3(0, -angle, 0), gloss: 0.4, in: parent)
+                 euler: SCNVector3(0, -angle, 0),
+                 scale: SCNVector3(1, 0.22, 0.4), gloss: 0.4, in: parent)
         }
         return SCNSphere(radius: 0.48)
     }
@@ -1035,12 +1035,12 @@ enum ItemNodeFactory {
              scale: SCNVector3(1.5, 0.72, 0.5), gloss: 0.3, in: parent)
         part(SCNSphere(radius: 0.20), bunTexture,
              position: SCNVector3(-0.52, 0.05, 0),
-             scale: SCNVector3(1.1, 0.75, 0.35),
-             euler: SCNVector3(0, 0, 0.5), gloss: 0.3, in: parent)
+             euler: SCNVector3(0, 0, 0.5),
+             scale: SCNVector3(1.1, 0.75, 0.35), gloss: 0.3, in: parent)
         part(SCNSphere(radius: 0.20), bunTexture,
              position: SCNVector3(-0.52, -0.05, 0),
-             scale: SCNVector3(1.1, 0.75, 0.35),
-             euler: SCNVector3(0, 0, -0.5), gloss: 0.3, in: parent)
+             euler: SCNVector3(0, 0, -0.5),
+             scale: SCNVector3(1.1, 0.75, 0.35), gloss: 0.3, in: parent)
         part(SCNSphere(radius: 0.045), darkBrown,
              position: SCNVector3(0.44, 0.12, 0.16), gloss: 0.3, in: parent)
         return SCNBox(width: 1.35, height: 0.6, length: 0.45, chamferRadius: 0.15)
@@ -1085,12 +1085,12 @@ enum ItemNodeFactory {
         let tail = UIColor(red: 0.88, green: 0.35, blue: 0.25, alpha: 1)
         part(SCNSphere(radius: 0.13), tail,
              position: SCNVector3(-0.46, -0.14, 0),
-             scale: SCNVector3(1.3, 0.5, 0.3),
-             euler: SCNVector3(0, 0, 0.6), gloss: 0.6, in: parent)
+             euler: SCNVector3(0, 0, 0.6),
+             scale: SCNVector3(1.3, 0.5, 0.3), gloss: 0.6, in: parent)
         part(SCNSphere(radius: 0.11), tail,
              position: SCNVector3(-0.50, -0.02, 0.06),
-             scale: SCNVector3(1.3, 0.5, 0.3),
-             euler: SCNVector3(0, 0.4, 0.9), gloss: 0.6, in: parent)
+             euler: SCNVector3(0, 0.4, 0.9),
+             scale: SCNVector3(1.3, 0.5, 0.3), gloss: 0.6, in: parent)
         return SCNBox(width: 1.1, height: 0.7, length: 0.45, chamferRadius: 0.15)
     }
 

@@ -49,6 +49,7 @@ enum ItemType: String, CaseIterable, Identifiable, Hashable {
         case .cola: return "🥤"
         case .plum: return "🟣"
         case .onigiri: return "🍙"
+        case .fig: return "🍇"
         case .sushi: return "🍣"
         case .pomegranate: return "❤️"
         case .bungeoppang: return "🐟"
