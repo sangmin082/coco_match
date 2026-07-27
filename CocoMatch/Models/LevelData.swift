@@ -12,12 +12,12 @@ struct LevelData {
     static let maxLevel = 100
 
     static func level(_ n: Int) -> LevelData {
-        // 3레벨마다 새 아이템이 1종씩 해금된다 (과일부터 시작해 야식으로).
+        // 약 1.7레벨마다 새 아이템이 1종씩 해금된다 (총 59종, 레벨 94쯤 전체 등장).
+        // 초반은 과일, 이후 음식·과일이 번갈아 추가된다.
         // 한 레벨에는 "가장 최근 해금된 7종"만 사용해서(슬라이딩 윈도우)
-        // 고레벨은 야식 위주가 되고, 총 아이템 수 상한은 63개다.
-        // (아이템을 큼직하게 키우면서 물량은 화면에 맞게 조정)
+        // 메뉴가 계속 바뀌고, 총 아이템 수 상한은 63개다.
         let all = ItemType.allCases
-        let introduced = min(3 + (n - 1) / 3, all.count)
+        let introduced = min(3 + (n * 3) / 5, all.count)
         let windowSize = min(introduced, 7)
         let types = Array(all.prefix(introduced).suffix(windowSize))
         let triples = min(2 + (n - 1) / 5, 3)

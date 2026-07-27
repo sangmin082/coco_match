@@ -33,6 +33,46 @@ enum ItemNodeFactory {
         case .donut: collision = buildDonut(in: node)
         case .cola: collision = buildCola(in: node)
         case .onigiri: collision = buildOnigiri(in: node)
+        case .grape: collision = buildBerryCluster(in: node, color: UIColor(red: 0.48, green: 0.26, blue: 0.58, alpha: 1), radius: 0.17)
+        case .greenGrape: collision = buildBerryCluster(in: node, color: UIColor(red: 0.62, green: 0.80, blue: 0.36, alpha: 1), radius: 0.17)
+        case .blueberry: collision = buildBerryCluster(in: node, color: UIColor(red: 0.30, green: 0.36, blue: 0.62, alpha: 1), radius: 0.14)
+        case .peach: collision = buildPeach(in: node)
+        case .lemon: collision = buildCitrus(in: node, texture: lemonTexture, scaleX: 1.25, nubs: true)
+        case .lime: collision = buildCitrus(in: node, texture: limeTexture, scaleX: 1.1, nubs: true)
+        case .cherry: collision = buildCherry(in: node)
+        case .kiwi: collision = buildKiwi(in: node)
+        case .pear: collision = buildPear(in: node)
+        case .mango: collision = buildMango(in: node)
+        case .melon: collision = buildMelon(in: node)
+        case .persimmon: collision = buildPersimmon(in: node)
+        case .plum: collision = buildPlum(in: node)
+        case .fig: collision = buildFig(in: node)
+        case .pomegranate: collision = buildPomegranate(in: node)
+        case .dragonfruit: collision = buildDragonfruit(in: node)
+        case .avocado: collision = buildAvocado(in: node)
+        case .tomato: collision = buildTomato(in: node)
+        case .papaya: collision = buildPapaya(in: node)
+        case .hallabong: collision = buildHallabong(in: node)
+        case .sushi: collision = buildSushi(in: node)
+        case .bungeoppang: collision = buildBungeoppang(in: node)
+        case .hotteok: collision = buildHotteok(in: node)
+        case .corndog: collision = buildCorndog(in: node)
+        case .friedShrimp: collision = buildFriedShrimp(in: node)
+        case .eggTart: collision = buildEggTart(in: node)
+        case .croissant: collision = buildCroissant(in: node)
+        case .pancake: collision = buildPancake(in: node)
+        case .icecream: collision = buildIcecream(in: node)
+        case .cupcake: collision = buildCupcake(in: node)
+        case .chocolate: collision = buildChocolate(in: node)
+        case .cookie: collision = buildCookie(in: node)
+        case .candy: collision = buildCandy(in: node)
+        case .lollipop: collision = buildLollipop(in: node)
+        case .skewer: collision = buildSkewer(in: node)
+        case .friedEgg: collision = buildFriedEgg(in: node)
+        case .toast: collision = buildToast(in: node)
+        case .sandwich: collision = buildSandwich(in: node)
+        case .shavedIce: collision = buildShavedIce(in: node)
+        case .boba: collision = buildBoba(in: node)
         }
 
         // 아이템을 큼직하게 (화면 가로에 4개 남짓)
@@ -671,6 +711,617 @@ enum ItemNodeFactory {
         part(SCNBox(width: 0.44, height: 0.42, length: 0.54, chamferRadius: 0.02), noriTexture,
              position: SCNVector3(0, -0.24, 0), gloss: 0.5, in: parent)
         return SCNBox(width: 1.05, height: 0.9, length: 0.5, chamferRadius: 0.12)
+    }
+
+    // MARK: - 확장 텍스처
+
+    private static let lemonTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.97, green: 0.85, blue: 0.25, alpha: 1))
+        speckle(c, s, color: UIColor(red: 0.84, green: 0.70, blue: 0.12, alpha: 0.5), count: 110, minR: 1, maxR: 3)
+    }
+
+    private static let limeTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.55, green: 0.76, blue: 0.25, alpha: 1))
+        speckle(c, s, color: UIColor(red: 0.40, green: 0.60, blue: 0.14, alpha: 0.5), count: 110, minR: 1, maxR: 3)
+    }
+
+    private static let kiwiTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.55, green: 0.43, blue: 0.27, alpha: 1))
+        for _ in 0..<180 {
+            c.setStrokeColor(UIColor(red: 0.42, green: 0.32, blue: 0.18, alpha: 0.7).cgColor)
+            c.setLineWidth(1.2)
+            let x = CGFloat.random(in: 0...s.width)
+            let y = CGFloat.random(in: 0...s.height)
+            c.move(to: CGPoint(x: x, y: y))
+            c.addLine(to: CGPoint(x: x + CGFloat.random(in: -3...3), y: y + CGFloat.random(in: 4...9)))
+            c.strokePath()
+        }
+    }
+
+    private static let melonTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.76, green: 0.82, blue: 0.58, alpha: 1))
+        c.setStrokeColor(UIColor(red: 0.93, green: 0.94, blue: 0.85, alpha: 0.9).cgColor)
+        c.setLineWidth(2.5)
+        for _ in 0..<120 {
+            let x = CGFloat.random(in: 0...s.width)
+            let y = CGFloat.random(in: 0...s.height)
+            c.move(to: CGPoint(x: x, y: y))
+            c.addLine(to: CGPoint(x: x + CGFloat.random(in: -18...18), y: y + CGFloat.random(in: -18...18)))
+            c.strokePath()
+        }
+    }
+
+    private static let mangoTexture: UIImage = texture { c, s in
+        verticalGradient(c, s,
+                         top: UIColor(red: 0.88, green: 0.30, blue: 0.20, alpha: 1),
+                         bottom: UIColor(red: 0.97, green: 0.72, blue: 0.20, alpha: 1))
+    }
+
+    private static let avocadoTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.22, green: 0.32, blue: 0.13, alpha: 1))
+        speckle(c, s, color: UIColor(red: 0.32, green: 0.44, blue: 0.20, alpha: 0.6), count: 140, minR: 1, maxR: 3.5)
+    }
+
+    private static let salmonTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.95, green: 0.52, blue: 0.35, alpha: 1))
+        c.setStrokeColor(UIColor(white: 1, alpha: 0.75).cgColor)
+        c.setLineWidth(9)
+        for i in 0..<6 {
+            c.move(to: CGPoint(x: CGFloat(i) * 48 - 24, y: 0))
+            c.addLine(to: CGPoint(x: CGFloat(i) * 48 + 44, y: s.height))
+            c.strokePath()
+        }
+    }
+
+    private static let cookieTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.82, green: 0.60, blue: 0.34, alpha: 1))
+        speckle(c, s, color: UIColor(red: 0.30, green: 0.17, blue: 0.09, alpha: 0.95), count: 22, minR: 4, maxR: 9)
+        speckle(c, s, color: UIColor(red: 0.90, green: 0.74, blue: 0.50, alpha: 0.6), count: 40, minR: 2, maxR: 4)
+    }
+
+    private static let candyTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.99, green: 0.94, blue: 0.94, alpha: 1))
+        c.setFillColor(UIColor(red: 0.93, green: 0.35, blue: 0.50, alpha: 1).cgColor)
+        var x: CGFloat = -s.height
+        while x < s.width + s.height {
+            c.move(to: CGPoint(x: x, y: 0))
+            c.addLine(to: CGPoint(x: x + 30, y: 0))
+            c.addLine(to: CGPoint(x: x + 30 + s.height, y: s.height))
+            c.addLine(to: CGPoint(x: x + s.height, y: s.height))
+            c.closePath()
+            c.fillPath()
+            x += 64
+        }
+    }
+
+    // MARK: - 확장 과일
+
+    /// 🍇🫐 송이 과일 공용: 알맹이 클러스터 + 꼭지
+    private static func buildBerryCluster(in parent: SCNNode, color: UIColor, radius: CGFloat) -> SCNGeometry {
+        let offsets: [(Float, Float, Float)] = [
+            (0, 0.18, 0), (-0.20, 0.06, 0.10), (0.20, 0.06, 0.10), (0, 0.03, -0.20),
+            (-0.13, -0.18, -0.04), (0.15, -0.18, 0.06), (0, -0.36, 0.02), (-0.04, -0.05, 0.22),
+        ]
+        for o in offsets {
+            part(SCNSphere(radius: radius), color,
+                 position: SCNVector3(o.0, o.1, o.2), gloss: 0.7, in: parent)
+        }
+        part(SCNCylinder(radius: 0.035, height: 0.28), darkBrown,
+             position: SCNVector3(0, 0.42, 0), euler: SCNVector3(0, 0, 0.2), gloss: 0.2, in: parent)
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 🍑 복숭아: 발그레한 몸통 + 골 + 잎
+    private static func buildPeach(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.50), UIColor(red: 0.96, green: 0.62, blue: 0.50, alpha: 1),
+             scale: SCNVector3(1, 0.95, 1), gloss: 0.4, in: parent)
+        part(SCNCapsule(capRadius: 0.045, height: 0.55),
+             UIColor(red: 0.85, green: 0.45, blue: 0.38, alpha: 1),
+             position: SCNVector3(0, 0.18, 0.44),
+             euler: SCNVector3(0.5, 0, 0), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.16), leafGreen,
+             position: SCNVector3(0.14, 0.48, 0),
+             euler: SCNVector3(0, 0, 0.6),
+             scale: SCNVector3(1, 0.25, 0.45), gloss: 0.5, in: parent)
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 🍋 시트러스 공용: 타원 몸통 + 양끝 꼭지
+    private static func buildCitrus(in parent: SCNNode, texture: UIImage,
+                                    scaleX: Float, nubs: Bool) -> SCNGeometry {
+        part(SCNSphere(radius: 0.42), texture,
+             scale: SCNVector3(scaleX, 0.85, 0.85), gloss: 0.4, in: parent)
+        if nubs {
+            part(SCNSphere(radius: 0.09), texture, position: SCNVector3(0.42 * scaleX, 0, 0), gloss: 0.4, in: parent)
+            part(SCNSphere(radius: 0.09), texture, position: SCNVector3(-0.42 * scaleX, 0, 0), gloss: 0.4, in: parent)
+        }
+        return SCNSphere(radius: 0.48)
+    }
+
+    /// 🍒 체리: 광택 알 2개 + 꼭지 줄기
+    private static func buildCherry(in parent: SCNNode) -> SCNGeometry {
+        let red = UIColor(red: 0.78, green: 0.10, blue: 0.18, alpha: 1)
+        part(SCNSphere(radius: 0.27), red, position: SCNVector3(-0.22, -0.20, 0), gloss: 0.85, in: parent)
+        part(SCNSphere(radius: 0.29), red, position: SCNVector3(0.22, -0.16, 0.05), gloss: 0.85, in: parent)
+        part(SCNCylinder(radius: 0.028, height: 0.62), leafGreen,
+             position: SCNVector3(-0.10, 0.18, 0), euler: SCNVector3(0, 0, 0.35), gloss: 0.3, in: parent)
+        part(SCNCylinder(radius: 0.028, height: 0.58), leafGreen,
+             position: SCNVector3(0.12, 0.20, 0.02), euler: SCNVector3(0, 0, -0.30), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.13), leafGreen,
+             position: SCNVector3(0.01, 0.46, 0),
+             scale: SCNVector3(1, 0.3, 0.5), gloss: 0.5, in: parent)
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 🥝 키위: 갈색 솜털 타원
+    private static func buildKiwi(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.42), kiwiTexture,
+             scale: SCNVector3(1.2, 0.9, 0.9), gloss: 0.15, in: parent)
+        return SCNSphere(radius: 0.46)
+    }
+
+    /// 🍐 배: 황금빛 몸통 + 꼭지
+    private static func buildPear(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.50), UIColor(red: 0.88, green: 0.74, blue: 0.44, alpha: 1),
+             gloss: 0.35, in: parent)
+        part(SCNSphere(radius: 0.50), UIColor(red: 0.88, green: 0.74, blue: 0.44, alpha: 1),
+             position: SCNVector3(0, 0.05, 0), scale: SCNVector3(0.98, 1, 0.98), gloss: 0.35, in: parent)
+        part(SCNCylinder(radius: 0.04, height: 0.28), darkBrown,
+             position: SCNVector3(0, 0.56, 0), euler: SCNVector3(0, 0, 0.2), gloss: 0.2, in: parent)
+        return SCNSphere(radius: 0.52)
+    }
+
+    /// 🥭 망고: 붉은빛에서 노랑으로 물드는 타원
+    private static func buildMango(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.44), mangoTexture,
+             scale: SCNVector3(1.2, 0.95, 0.85),
+             euler: SCNVector3(0, 0, 0.25), gloss: 0.55, in: parent)
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 🍈 멜론: 그물 무늬 + T자 꼭지
+    private static func buildMelon(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.52), melonTexture, gloss: 0.3, in: parent)
+        part(SCNCylinder(radius: 0.035, height: 0.20),
+             UIColor(red: 0.55, green: 0.55, blue: 0.35, alpha: 1),
+             position: SCNVector3(0, 0.58, 0), gloss: 0.2, in: parent)
+        part(SCNCylinder(radius: 0.03, height: 0.24),
+             UIColor(red: 0.55, green: 0.55, blue: 0.35, alpha: 1),
+             position: SCNVector3(0, 0.66, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2), gloss: 0.2, in: parent)
+        return SCNSphere(radius: 0.54)
+    }
+
+    /// 🟠 감: 납작한 주황 몸통 + 십자 꼭지잎
+    private static func buildPersimmon(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.50), UIColor(red: 0.94, green: 0.50, blue: 0.14, alpha: 1),
+             scale: SCNVector3(1, 0.78, 1), gloss: 0.6, in: parent)
+        for i in 0..<4 {
+            let angle = Float(i) / 4 * 2 * Float.pi
+            part(SCNSphere(radius: 0.14),
+                 UIColor(red: 0.42, green: 0.52, blue: 0.24, alpha: 1),
+                 position: SCNVector3(0.14 * cos(angle), 0.38, 0.14 * sin(angle)),
+                 scale: SCNVector3(1, 0.25, 0.55),
+                 euler: SCNVector3(0, -angle, 0), gloss: 0.35, in: parent)
+        }
+        part(SCNCylinder(radius: 0.035, height: 0.14), darkBrown,
+             position: SCNVector3(0, 0.44, 0), gloss: 0.2, in: parent)
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 🟣 자두: 진자주 광택 몸통 + 골
+    private static func buildPlum(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.46), UIColor(red: 0.48, green: 0.16, blue: 0.36, alpha: 1),
+             gloss: 0.85, in: parent)
+        part(SCNCapsule(capRadius: 0.04, height: 0.5),
+             UIColor(red: 0.36, green: 0.10, blue: 0.27, alpha: 1),
+             position: SCNVector3(0, 0.14, 0.40),
+             euler: SCNVector3(0.5, 0, 0), gloss: 0.6, in: parent)
+        part(SCNCylinder(radius: 0.03, height: 0.18), darkBrown,
+             position: SCNVector3(0, 0.50, 0), gloss: 0.2, in: parent)
+        return SCNSphere(radius: 0.48)
+    }
+
+    /// 무화과: 보랏빛 물방울 몸통 + 목
+    private static func buildFig(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.44), UIColor(red: 0.42, green: 0.22, blue: 0.38, alpha: 1),
+             position: SCNVector3(0, -0.08, 0),
+             scale: SCNVector3(1, 1.05, 1), gloss: 0.4, in: parent)
+        part(SCNCone(topRadius: 0.05, bottomRadius: 0.24, height: 0.4),
+             UIColor(red: 0.50, green: 0.32, blue: 0.30, alpha: 1),
+             position: SCNVector3(0, 0.42, 0), gloss: 0.3, in: parent)
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 석류: 붉은 몸통 + 왕관
+    private static func buildPomegranate(in parent: SCNNode) -> SCNGeometry {
+        let red = UIColor(red: 0.75, green: 0.14, blue: 0.16, alpha: 1)
+        part(SCNSphere(radius: 0.48), red, gloss: 0.5, in: parent)
+        part(SCNCylinder(radius: 0.14, height: 0.14), red,
+             position: SCNVector3(0, 0.50, 0), gloss: 0.5, in: parent)
+        for i in 0..<5 {
+            let angle = Float(i) / 5 * 2 * Float.pi
+            part(SCNCone(topRadius: 0, bottomRadius: 0.05, height: 0.14), red,
+                 position: SCNVector3(0.10 * cos(angle), 0.60, 0.10 * sin(angle)),
+                 euler: SCNVector3(0.3 * sin(angle), 0, 0.3 * cos(angle)), gloss: 0.5, in: parent)
+        }
+        return SCNSphere(radius: 0.5)
+    }
+
+    /// 🐉 용과: 핑크 몸통 + 초록 비늘 잎
+    private static func buildDragonfruit(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.44), UIColor(red: 0.92, green: 0.28, blue: 0.48, alpha: 1),
+             scale: SCNVector3(1, 1.18, 1), gloss: 0.5, in: parent)
+        let scales: [(Float, Float, Float)] = [
+            (0.30, 0.30, 0.20), (-0.28, 0.24, -0.18), (0.10, -0.06, 0.40),
+            (-0.34, -0.14, 0.16), (0.30, -0.26, -0.16), (0.0, 0.44, -0.24),
+        ]
+        for (x, y, z) in scales {
+            let len = sqrt(x * x + y * y + z * z)
+            part(SCNCone(topRadius: 0, bottomRadius: 0.09, height: 0.26),
+                 UIColor(red: 0.55, green: 0.78, blue: 0.40, alpha: 1),
+                 position: SCNVector3(x * 1.25, y * 1.25, z * 1.25),
+                 euler: SCNVector3(atan2(z / len, y / len), 0, -atan2(x / len, y / len)),
+                 gloss: 0.4, in: parent)
+        }
+        return SCNSphere(radius: 0.52)
+    }
+
+    /// 🥑 아보카도: 서양배 모양 + 오돌토돌 껍질
+    private static func buildAvocado(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.42), avocadoTexture,
+             position: SCNVector3(0, -0.12, 0), gloss: 0.25, in: parent)
+        part(SCNSphere(radius: 0.30), avocadoTexture,
+             position: SCNVector3(0, 0.26, 0), gloss: 0.25, in: parent)
+        part(SCNCylinder(radius: 0.035, height: 0.14), darkBrown,
+             position: SCNVector3(0, 0.58, 0), euler: SCNVector3(0, 0, 0.3), gloss: 0.2, in: parent)
+        return SCNCapsule(capRadius: 0.42, height: 1.15)
+    }
+
+    /// 🍅 토마토: 광택 몸통 + 별 모양 꼭지
+    private static func buildTomato(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.48), UIColor(red: 0.88, green: 0.20, blue: 0.14, alpha: 1),
+             scale: SCNVector3(1, 0.88, 1), gloss: 0.85, in: parent)
+        for i in 0..<5 {
+            let angle = Float(i) / 5 * 2 * Float.pi
+            part(SCNSphere(radius: 0.13), leafGreen,
+                 position: SCNVector3(0.15 * cos(angle), 0.38, 0.15 * sin(angle)),
+                 scale: SCNVector3(1, 0.22, 0.4),
+                 euler: SCNVector3(0, -angle, 0), gloss: 0.4, in: parent)
+        }
+        return SCNSphere(radius: 0.48)
+    }
+
+    /// 파파야: 주황-초록 긴 타원
+    private static func buildPapaya(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.40), mangoTexture,
+             scale: SCNVector3(0.95, 1.35, 0.9), gloss: 0.4, in: parent)
+        part(SCNCylinder(radius: 0.04, height: 0.14), leafGreen,
+             position: SCNVector3(0, 0.60, 0), gloss: 0.3, in: parent)
+        return SCNCapsule(capRadius: 0.40, height: 1.15)
+    }
+
+    /// 🍊 한라봉: 오렌지 몸통 + 볼록 튀어나온 꼭지
+    private static func buildHallabong(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.48), orangeTexture, gloss: 0.4, in: parent)
+        part(SCNSphere(radius: 0.17), orangeTexture,
+             position: SCNVector3(0, 0.46, 0), gloss: 0.4, in: parent)
+        part(SCNCylinder(radius: 0.035, height: 0.12), leafGreen,
+             position: SCNVector3(0, 0.62, 0), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.15), leafGreen,
+             position: SCNVector3(0.13, 0.60, 0),
+             euler: SCNVector3(0, 0, 0.6),
+             scale: SCNVector3(1, 0.25, 0.45), gloss: 0.5, in: parent)
+        return SCNSphere(radius: 0.52)
+    }
+
+    // MARK: - 확장 음식
+
+    /// 🍣 연어 초밥: 밥 위에 줄무늬 연어
+    private static func buildSushi(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.36), riceTexture,
+             position: SCNVector3(0, -0.12, 0),
+             scale: SCNVector3(1.35, 0.62, 0.95), gloss: 0.3, in: parent)
+        part(SCNBox(width: 0.92, height: 0.13, length: 0.52, chamferRadius: 0.06), salmonTexture,
+             position: SCNVector3(0, 0.14, 0),
+             euler: SCNVector3(0, 0, 0.06), gloss: 0.7, in: parent)
+        return SCNBox(width: 1.0, height: 0.6, length: 0.65, chamferRadius: 0.2)
+    }
+
+    /// 🐟 붕어빵: 노릇한 물고기 모양 + 꼬리
+    private static func buildBungeoppang(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.36), bunTexture,
+             position: SCNVector3(0.08, 0, 0),
+             scale: SCNVector3(1.5, 0.72, 0.5), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.20), bunTexture,
+             position: SCNVector3(-0.52, 0.05, 0),
+             scale: SCNVector3(1.1, 0.75, 0.35),
+             euler: SCNVector3(0, 0, 0.5), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.20), bunTexture,
+             position: SCNVector3(-0.52, -0.05, 0),
+             scale: SCNVector3(1.1, 0.75, 0.35),
+             euler: SCNVector3(0, 0, -0.5), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.045), darkBrown,
+             position: SCNVector3(0.44, 0.12, 0.16), gloss: 0.3, in: parent)
+        return SCNBox(width: 1.35, height: 0.6, length: 0.45, chamferRadius: 0.15)
+    }
+
+    /// 🫓 호떡: 노릇한 원반 + 흑설탕 시럽
+    private static func buildHotteok(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCylinder(radius: 0.44, height: 0.18), bunTexture, gloss: 0.35, in: parent)
+        part(SCNSphere(radius: 0.22),
+             UIColor(red: 0.45, green: 0.26, blue: 0.10, alpha: 1),
+             position: SCNVector3(0, 0.09, 0),
+             scale: SCNVector3(1, 0.3, 1), gloss: 0.9, in: parent)
+        return SCNCylinder(radius: 0.46, height: 0.24)
+    }
+
+    /// 🍢 핫도그(콘도그): 튀김옷 몸통 + 설탕 + 케첩·머스타드 + 나무 스틱
+    private static func buildCorndog(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCapsule(capRadius: 0.22, height: 0.85), crispyTexture,
+             position: SCNVector3(0, 0.14, 0), gloss: 0.45, in: parent)
+        for (x, y) in [(-0.02, 0.42), (0.05, 0.18), (-0.06, -0.04)] {
+            part(SCNSphere(radius: 0.05), mustardYellow,
+                 position: SCNVector3(Float(x), Float(y), 0.20), gloss: 0.75, in: parent)
+        }
+        for (x, y) in [(0.07, 0.32), (-0.05, 0.08)] {
+            part(SCNSphere(radius: 0.05), sauceRed,
+                 position: SCNVector3(Float(x), Float(y), 0.20), gloss: 0.75, in: parent)
+        }
+        part(SCNCylinder(radius: 0.045, height: 0.45),
+             UIColor(red: 0.80, green: 0.62, blue: 0.40, alpha: 1),
+             position: SCNVector3(0, -0.48, 0), gloss: 0.3, in: parent)
+        return SCNCapsule(capRadius: 0.24, height: 1.35)
+    }
+
+    /// 🍤 새우튀김: 굽은 튀김 몸통 + 빨간 꼬리
+    private static func buildFriedShrimp(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCapsule(capRadius: 0.19, height: 0.55), crispyTexture,
+             position: SCNVector3(-0.12, 0.02, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 - 0.35), gloss: 0.45, in: parent)
+        part(SCNCapsule(capRadius: 0.17, height: 0.45), crispyTexture,
+             position: SCNVector3(0.26, 0.14, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 + 0.55), gloss: 0.45, in: parent)
+        let tail = UIColor(red: 0.88, green: 0.35, blue: 0.25, alpha: 1)
+        part(SCNSphere(radius: 0.13), tail,
+             position: SCNVector3(-0.46, -0.14, 0),
+             scale: SCNVector3(1.3, 0.5, 0.3),
+             euler: SCNVector3(0, 0, 0.6), gloss: 0.6, in: parent)
+        part(SCNSphere(radius: 0.11), tail,
+             position: SCNVector3(-0.50, -0.02, 0.06),
+             scale: SCNVector3(1.3, 0.5, 0.3),
+             euler: SCNVector3(0, 0.4, 0.9), gloss: 0.6, in: parent)
+        return SCNBox(width: 1.1, height: 0.7, length: 0.45, chamferRadius: 0.15)
+    }
+
+    /// 🥧 에그타르트: 페이스트리 컵 + 노른자 커스터드
+    private static func buildEggTart(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCone(topRadius: 0.44, bottomRadius: 0.32, height: 0.22), bunTexture,
+             position: SCNVector3(0, -0.06, 0), gloss: 0.3, in: parent)
+        part(SCNTorus(ringRadius: 0.42, pipeRadius: 0.06), bunTexture,
+             position: SCNVector3(0, 0.05, 0), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.34), mustardYellow,
+             position: SCNVector3(0, 0.06, 0),
+             scale: SCNVector3(1, 0.28, 1), gloss: 0.85, in: parent)
+        part(SCNSphere(radius: 0.06), UIColor(red: 0.55, green: 0.32, blue: 0.10, alpha: 1),
+             position: SCNVector3(0.12, 0.14, 0.08),
+             scale: SCNVector3(1, 0.4, 1), gloss: 0.5, in: parent)
+        return SCNCylinder(radius: 0.48, height: 0.35)
+    }
+
+    /// 🥐 크루아상: 겹겹이 말린 노릇한 몸통
+    private static func buildCroissant(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCapsule(capRadius: 0.20, height: 0.55), bunTexture,
+             euler: SCNVector3(0, 0, Float.pi / 2), gloss: 0.35, in: parent)
+        part(SCNCapsule(capRadius: 0.16, height: 0.45), bunTexture,
+             position: SCNVector3(-0.36, 0.12, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 + 0.65), gloss: 0.35, in: parent)
+        part(SCNCapsule(capRadius: 0.16, height: 0.45), bunTexture,
+             position: SCNVector3(0.36, 0.12, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 - 0.65), gloss: 0.35, in: parent)
+        part(SCNCapsule(capRadius: 0.11, height: 0.3), bunTexture,
+             position: SCNVector3(-0.58, 0.30, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 + 1.1), gloss: 0.35, in: parent)
+        part(SCNCapsule(capRadius: 0.11, height: 0.3), bunTexture,
+             position: SCNVector3(0.58, 0.30, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2 - 1.1), gloss: 0.35, in: parent)
+        return SCNBox(width: 1.35, height: 0.65, length: 0.45, chamferRadius: 0.15)
+    }
+
+    /// 🥞 팬케이크: 3단 스택 + 버터 + 흐르는 시럽
+    private static func buildPancake(in parent: SCNNode) -> SCNGeometry {
+        for (i, y) in [-0.20, -0.05, 0.10].enumerated() {
+            part(SCNCylinder(radius: CGFloat(0.44 - Float(i) * 0.02), height: 0.14), bunTexture,
+                 position: SCNVector3(Float(i % 2) * 0.03, Float(y), 0), gloss: 0.3, in: parent)
+        }
+        part(SCNSphere(radius: 0.30),
+             UIColor(red: 0.62, green: 0.36, blue: 0.12, alpha: 1),
+             position: SCNVector3(0, 0.18, 0),
+             scale: SCNVector3(1.2, 0.25, 1.2), gloss: 0.9, in: parent)
+        part(SCNBox(width: 0.18, height: 0.10, length: 0.18, chamferRadius: 0.02), mustardYellow,
+             position: SCNVector3(0, 0.28, 0),
+             euler: SCNVector3(0, 0.4, 0), gloss: 0.6, in: parent)
+        return SCNCylinder(radius: 0.48, height: 0.62)
+    }
+
+    /// 🍦 아이스크림: 와플 콘 + 크림 2단 + 체리
+    private static func buildIcecream(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCone(topRadius: 0.28, bottomRadius: 0.02, height: 0.55), pineappleTexture,
+             position: SCNVector3(0, -0.35, 0), gloss: 0.3, in: parent)
+        let cream = UIColor(red: 0.98, green: 0.95, blue: 0.88, alpha: 1)
+        part(SCNSphere(radius: 0.30), cream, position: SCNVector3(0, 0.05, 0), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.21), cream, position: SCNVector3(0, 0.33, 0), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.13), cream, position: SCNVector3(0, 0.52, 0), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.07), UIColor(red: 0.80, green: 0.12, blue: 0.20, alpha: 1),
+             position: SCNVector3(0, 0.64, 0), gloss: 0.85, in: parent)
+        return SCNCapsule(capRadius: 0.30, height: 1.3)
+    }
+
+    /// 🧁 컵케이크: 주름 컵 + 프로스팅 소용돌이 + 체리
+    private static func buildCupcake(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCone(topRadius: 0.36, bottomRadius: 0.26, height: 0.35),
+             UIColor(red: 0.92, green: 0.55, blue: 0.65, alpha: 1),
+             position: SCNVector3(0, -0.28, 0), gloss: 0.4, in: parent)
+        let frosting = UIColor(red: 0.98, green: 0.92, blue: 0.88, alpha: 1)
+        part(SCNSphere(radius: 0.34), frosting,
+             position: SCNVector3(0, 0.0, 0), scale: SCNVector3(1, 0.6, 1), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.26), frosting, position: SCNVector3(0, 0.18, 0), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.16), frosting, position: SCNVector3(0, 0.38, 0), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.07), UIColor(red: 0.80, green: 0.12, blue: 0.20, alpha: 1),
+             position: SCNVector3(0, 0.52, 0), gloss: 0.85, in: parent)
+        return SCNCylinder(radius: 0.40, height: 1.0)
+    }
+
+    /// 🍫 초콜릿: 조각 홈이 파인 다크 초콜릿 바
+    private static func buildChocolate(in parent: SCNNode) -> SCNGeometry {
+        let choco = UIColor(red: 0.32, green: 0.18, blue: 0.10, alpha: 1)
+        part(SCNBox(width: 0.88, height: 0.14, length: 0.58, chamferRadius: 0.03), choco,
+             gloss: 0.6, in: parent)
+        for row in 0..<2 {
+            for col in 0..<3 {
+                part(SCNBox(width: 0.22, height: 0.08, length: 0.20, chamferRadius: 0.03), choco,
+                     position: SCNVector3(Float(col) * 0.27 - 0.27, 0.10, Float(row) * 0.26 - 0.13),
+                     gloss: 0.6, in: parent)
+            }
+        }
+        return SCNBox(width: 0.92, height: 0.28, length: 0.62, chamferRadius: 0.05)
+    }
+
+    /// 🍪 쿠키: 초코칩 박힌 원반
+    private static func buildCookie(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCylinder(radius: 0.45, height: 0.15), cookieTexture, gloss: 0.25, in: parent)
+        let chip = UIColor(red: 0.28, green: 0.16, blue: 0.08, alpha: 1)
+        for (x, z) in [(-0.20, 0.10), (0.16, -0.18), (0.05, 0.24), (0.28, 0.10), (-0.10, -0.22)] {
+            part(SCNSphere(radius: 0.06), chip,
+                 position: SCNVector3(Float(x), 0.08, Float(z)),
+                 scale: SCNVector3(1, 0.6, 1), gloss: 0.5, in: parent)
+        }
+        return SCNCylinder(radius: 0.47, height: 0.22)
+    }
+
+    /// 🍬 사탕: 줄무늬 알맹이 + 양쪽 포장 꼬임
+    private static func buildCandy(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.32), candyTexture, gloss: 0.8, in: parent)
+        let wrap = UIColor(red: 0.93, green: 0.42, blue: 0.55, alpha: 1)
+        for sign: Float in [-1, 1] {
+            part(SCNCone(topRadius: 0.02, bottomRadius: 0.13, height: 0.28), wrap,
+                 position: SCNVector3(sign * 0.45, 0, 0),
+                 euler: SCNVector3(0, 0, sign * -Float.pi / 2), gloss: 0.6, in: parent)
+            part(SCNSphere(radius: 0.09), wrap,
+                 position: SCNVector3(sign * 0.60, 0, 0),
+                 scale: SCNVector3(0.7, 1, 1), gloss: 0.6, in: parent)
+        }
+        return SCNBox(width: 1.3, height: 0.65, length: 0.65, chamferRadius: 0.25)
+    }
+
+    /// 🍭 롤리팝: 줄무늬 원반 + 흰 막대
+    private static func buildLollipop(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCylinder(radius: 0.36, height: 0.14), candyTexture,
+             position: SCNVector3(0, 0.28, 0),
+             euler: SCNVector3(Float.pi / 2, 0, 0), gloss: 0.85, in: parent)
+        part(SCNTorus(ringRadius: 0.36, pipeRadius: 0.07), candyTexture,
+             position: SCNVector3(0, 0.28, 0),
+             euler: SCNVector3(Float.pi / 2, 0, 0), gloss: 0.85, in: parent)
+        part(SCNCylinder(radius: 0.045, height: 0.65), riceWhite,
+             position: SCNVector3(0, -0.30, 0), gloss: 0.4, in: parent)
+        return SCNCapsule(capRadius: 0.40, height: 1.3)
+    }
+
+    /// 🍡 닭꼬치: 노릇한 고기 큐브 3개 + 꼬치 + 파
+    private static func buildSkewer(in parent: SCNNode) -> SCNGeometry {
+        for (i, y) in [-0.28, 0.02, 0.32].enumerated() {
+            part(SCNBox(width: 0.30, height: 0.26, length: 0.28, chamferRadius: 0.08), crispyTexture,
+                 position: SCNVector3(0, Float(y), 0),
+                 euler: SCNVector3(0, Float(i) * 0.5, 0), gloss: 0.55, in: parent)
+        }
+        part(SCNCapsule(capRadius: 0.04, height: 0.12), leafGreen,
+             position: SCNVector3(0.10, 0.17, 0.12),
+             euler: SCNVector3(Float.pi / 2, 0.4, 0), gloss: 0.4, in: parent)
+        part(SCNCylinder(radius: 0.035, height: 1.15),
+             UIColor(red: 0.80, green: 0.62, blue: 0.40, alpha: 1),
+             position: SCNVector3(0, -0.05, 0), gloss: 0.3, in: parent)
+        return SCNCapsule(capRadius: 0.24, height: 1.3)
+    }
+
+    /// 🍳 계란후라이: 흰자 웅덩이 + 탱글한 노른자
+    private static func buildFriedEgg(in parent: SCNNode) -> SCNGeometry {
+        part(SCNSphere(radius: 0.42), riceWhite,
+             scale: SCNVector3(1.25, 0.18, 1.05), gloss: 0.6, in: parent)
+        part(SCNSphere(radius: 0.36), riceWhite,
+             position: SCNVector3(0.22, 0, 0.14),
+             scale: SCNVector3(1.1, 0.20, 0.95), gloss: 0.6, in: parent)
+        part(SCNSphere(radius: 0.19), mustardYellow,
+             position: SCNVector3(-0.04, 0.08, -0.02),
+             scale: SCNVector3(1, 0.65, 1), gloss: 0.9, in: parent)
+        return SCNCylinder(radius: 0.56, height: 0.3)
+    }
+
+    /// 🍞 식빵: 둥근 윗면의 토스트
+    private static func buildToast(in parent: SCNNode) -> SCNGeometry {
+        part(SCNBox(width: 0.82, height: 0.72, length: 0.20, chamferRadius: 0.06), bunTexture,
+             position: SCNVector3(0, -0.12, 0), gloss: 0.3, in: parent)
+        part(SCNCylinder(radius: 0.41, height: 0.20), bunTexture,
+             position: SCNVector3(0, 0.24, 0),
+             euler: SCNVector3(Float.pi / 2, 0, 0), gloss: 0.3, in: parent)
+        part(SCNBox(width: 0.62, height: 0.52, length: 0.06, chamferRadius: 0.04),
+             UIColor(red: 0.97, green: 0.88, blue: 0.68, alpha: 1),
+             position: SCNVector3(0, -0.06, 0.10), gloss: 0.25, in: parent)
+        return SCNBox(width: 0.88, height: 1.0, length: 0.28, chamferRadius: 0.08)
+    }
+
+    /// 🥪 샌드위치: 삼각 식빵 2장 사이 양상추·햄·치즈
+    private static func buildSandwich(in parent: SCNNode) -> SCNGeometry {
+        part(SCNPyramid(width: 0.95, height: 0.80, length: 0.16), bunTexture,
+             position: SCNVector3(0, -0.40, -0.14), gloss: 0.3, in: parent)
+        part(SCNPyramid(width: 0.95, height: 0.80, length: 0.16), bunTexture,
+             position: SCNVector3(0, -0.40, 0.14), gloss: 0.3, in: parent)
+        part(SCNPyramid(width: 0.90, height: 0.74, length: 0.07), leafGreen,
+             position: SCNVector3(0, -0.38, -0.03), gloss: 0.45, in: parent)
+        part(SCNPyramid(width: 0.88, height: 0.72, length: 0.06),
+             UIColor(red: 0.95, green: 0.62, blue: 0.66, alpha: 1),
+             position: SCNVector3(0, -0.38, 0.03), gloss: 0.5, in: parent)
+        part(SCNPyramid(width: 0.86, height: 0.70, length: 0.05), cheeseYellow,
+             position: SCNVector3(0, -0.38, 0.08), gloss: 0.6, in: parent)
+        return SCNBox(width: 1.0, height: 0.85, length: 0.45, chamferRadius: 0.1)
+    }
+
+    /// 🍧 팥빙수: 하늘색 그릇 + 눈꽃 얼음 산 + 팥 + 과일 토핑
+    private static func buildShavedIce(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCone(topRadius: 0.44, bottomRadius: 0.26, height: 0.35),
+             UIColor(red: 0.55, green: 0.75, blue: 0.90, alpha: 1),
+             position: SCNVector3(0, -0.30, 0), gloss: 0.6, in: parent)
+        part(SCNSphere(radius: 0.38), riceWhite,
+             position: SCNVector3(0, 0.05, 0),
+             scale: SCNVector3(1, 0.85, 1), gloss: 0.35, in: parent)
+        part(SCNSphere(radius: 0.24),
+             UIColor(red: 0.48, green: 0.22, blue: 0.18, alpha: 1),
+             position: SCNVector3(0, 0.32, 0),
+             scale: SCNVector3(1, 0.45, 1), gloss: 0.6, in: parent)
+        part(SCNSphere(radius: 0.08), UIColor(red: 0.80, green: 0.12, blue: 0.20, alpha: 1),
+             position: SCNVector3(0.10, 0.44, 0.06), gloss: 0.8, in: parent)
+        part(SCNSphere(radius: 0.06), mustardYellow,
+             position: SCNVector3(-0.12, 0.42, -0.04), gloss: 0.6, in: parent)
+        return SCNCylinder(radius: 0.46, height: 0.95)
+    }
+
+    /// 🧋 버블티: 밀크티 컵 + 바닥 타피오카 펄 + 굵은 빨대
+    private static func buildBoba(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCylinder(radius: 0.30, height: 0.72),
+             UIColor(red: 0.91, green: 0.80, blue: 0.66, alpha: 1),
+             position: SCNVector3(0, -0.02, 0), gloss: 0.55, in: parent)
+        let pearl = UIColor(red: 0.22, green: 0.15, blue: 0.12, alpha: 1)
+        for (x, z) in [(-0.16, 0.14), (0.0, 0.20), (0.16, 0.13), (-0.08, 0.19), (0.08, 0.18), (-0.19, 0.05), (0.20, 0.04)] {
+            part(SCNSphere(radius: 0.055), pearl,
+                 position: SCNVector3(Float(x), -0.30, Float(z)), gloss: 0.8, in: parent)
+        }
+        part(SCNSphere(radius: 0.31), riceWhite,
+             position: SCNVector3(0, 0.36, 0),
+             scale: SCNVector3(1, 0.35, 1), gloss: 0.55, in: parent)
+        part(SCNCylinder(radius: 0.07, height: 0.55),
+             UIColor(red: 0.90, green: 0.50, blue: 0.62, alpha: 1),
+             position: SCNVector3(0.06, 0.58, 0),
+             euler: SCNVector3(0, 0, 0.18), gloss: 0.6, in: parent)
+        return SCNCylinder(radius: 0.34, height: 1.25)
     }
 }
 
