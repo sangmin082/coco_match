@@ -33,8 +33,8 @@ enum ItemNodeFactory {
         case .onigiri: collision = buildOnigiri(in: node)
         }
 
-        // 고레벨에서 아이템이 더 많이 들어가도록 전체 크기를 10% 축소
-        let itemScale: CGFloat = 0.9
+        // 아이템을 큼직하게 (화면에 4~5개 폭)
+        let itemScale: CGFloat = 1.1
         node.scale = SCNVector3(Float(itemScale), Float(itemScale), Float(itemScale))
         let shape = SCNPhysicsShape(geometry: collision,
                                     options: [SCNPhysicsShape.Option.scale: itemScale])
@@ -43,7 +43,7 @@ enum ItemNodeFactory {
         body.restitution = 0.5
         body.friction = 0.6
         body.rollingFriction = 0.3
-        body.angularDamping = 0.3
+        body.angularDamping = 0.45
         body.damping = 0.1
         node.physicsBody = body
         return node
@@ -73,6 +73,21 @@ enum ItemNodeFactory {
         return n
     }
 
+    /// 귀여운 표정 (흰 눈 + 검은 눈동자 + 입) — 아이템 앞면(+z)에 붙인다.
+    /// 단순 도형 조합이 '만들다 만 느낌'이 나지 않도록 캐릭터성을 부여하는 핵심 장치.
+    private static func addFace(to parent: SCNNode, center: SCNVector3, scale s: Float = 1.0) {
+        for dx in [-0.13 * s, 0.13 * s] {
+            part(SCNSphere(radius: CGFloat(0.075 * s)), .white,
+                 position: SCNVector3(center.x + dx, center.y + 0.03 * s, center.z), in: parent)
+            part(SCNSphere(radius: CGFloat(0.042 * s)), UIColor(white: 0.12, alpha: 1),
+                 position: SCNVector3(center.x + dx, center.y + 0.03 * s, center.z + 0.052 * s), in: parent)
+        }
+        part(SCNCapsule(capRadius: CGFloat(0.024 * s), height: CGFloat(0.12 * s)),
+             UIColor(white: 0.15, alpha: 1),
+             position: SCNVector3(center.x, center.y - 0.11 * s, center.z + 0.02 * s),
+             euler: SCNVector3(0, 0, Float.pi / 2), in: parent)
+    }
+
     // MARK: - Palette
 
     private static let friedBrown = UIColor(red: 0.80, green: 0.52, blue: 0.25, alpha: 1)
@@ -98,6 +113,7 @@ enum ItemNodeFactory {
         for p in spots {
             part(SCNSphere(radius: 0.09), darkBrown, position: p, in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.05, 0.50))
         return SCNSphere(radius: 0.55)
     }
 
@@ -110,6 +126,7 @@ enum ItemNodeFactory {
         part(SCNCapsule(capRadius: 0.07, height: 0.30), leafGreen,
              position: SCNVector3(0.15, 0.56, 0),
              euler: SCNVector3(0, 0, 1.1), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.02, 0.46))
         return SCNSphere(radius: 0.52)
     }
 
@@ -126,6 +143,7 @@ enum ItemNodeFactory {
              euler: SCNVector3(0, 0, Float.pi / 2 - 0.6), in: parent)
         part(SCNSphere(radius: 0.07), darkBrown, position: SCNVector3(-0.62, 0.30, 0), in: parent)
         part(SCNSphere(radius: 0.07), darkBrown, position: SCNVector3(0.62, 0.30, 0), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.04, 0.15), scale: 0.7)
         return SCNBox(width: 1.4, height: 0.6, length: 0.4, chamferRadius: 0.15)
     }
 
@@ -146,6 +164,7 @@ enum ItemNodeFactory {
                  position: SCNVector3(0.14 * cos(angle), 0.48, 0.14 * sin(angle)),
                  euler: SCNVector3(0.4 * sin(angle), 0, 0.4 * cos(angle)), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.12, 0.31), scale: 0.85)
         return SCNCone(topRadius: 0.45, bottomRadius: 0.06, height: 0.85)
     }
 
@@ -157,6 +176,7 @@ enum ItemNodeFactory {
         part(SCNCapsule(capRadius: 0.08, height: 0.32), leafGreen,
              position: SCNVector3(0.17, 0.52, 0),
              euler: SCNVector3(0, 0, 1.2), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.02, 0.46))
         return SCNSphere(radius: 0.52)
     }
 
@@ -169,6 +189,7 @@ enum ItemNodeFactory {
         sphere.materials = [m]
         let n = SCNNode(geometry: sphere)
         parent.addChildNode(n)
+        addFace(to: parent, center: SCNVector3(0, 0.02, 0.50))
         return SCNSphere(radius: 0.55)
     }
 
@@ -200,6 +221,7 @@ enum ItemNodeFactory {
             part(SCNCone(topRadius: 0, bottomRadius: 0.10, height: 0.42), leafGreen,
                  position: p, euler: e, in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.0, 0.37), scale: 0.9)
         return SCNCapsule(capRadius: 0.42, height: 1.25)
     }
 
@@ -217,6 +239,7 @@ enum ItemNodeFactory {
              position: SCNVector3(-0.09, -0.58, 0), in: parent)
         part(SCNSphere(radius: 0.10), riceWhite,
              position: SCNVector3(0.09, -0.58, 0), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.18, 0.28), scale: 0.8)
         return SCNCapsule(capRadius: 0.33, height: 1.25)
     }
 
@@ -229,9 +252,9 @@ enum ItemNodeFactory {
         part(SCNCapsule(capRadius: 0.13, height: 0.95), bunTan,
              position: SCNVector3(0, 0.5, 0),
              euler: SCNVector3(0, 0, Float.pi / 2), in: parent)
-        part(SCNSphere(radius: 0.10), sauceRed, position: SCNVector3(-0.16, 0.28, 0.10), in: parent)
-        part(SCNSphere(radius: 0.10), sauceRed, position: SCNVector3(0.16, 0.24, 0.10), in: parent)
-        part(SCNSphere(radius: 0.09), sauceRed, position: SCNVector3(0, -0.05, 0.10), in: parent)
+        part(SCNSphere(radius: 0.10), sauceRed, position: SCNVector3(-0.16, 0.42, 0.10), in: parent)
+        part(SCNSphere(radius: 0.10), sauceRed, position: SCNVector3(0.16, 0.42, 0.10), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.10, 0.12), scale: 0.8)
         return SCNBox(width: 1.0, height: 1.15, length: 0.32, chamferRadius: 0.1)
     }
 
@@ -255,6 +278,7 @@ enum ItemNodeFactory {
             part(SCNSphere(radius: 0.035), riceWhite,
                  position: SCNVector3(0.24 * cos(angle), 0.48, 0.24 * sin(angle)), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.16, 0.43), scale: 0.85)
         return SCNCylinder(radius: 0.52, height: 1.0)
     }
 
@@ -276,6 +300,7 @@ enum ItemNodeFactory {
              UIColor(red: 0.35, green: 0.70, blue: 0.30, alpha: 1),
              position: SCNVector3(0.20, 0.42, 0),
              euler: SCNVector3(0, 0, 0.9), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.10, 0.20), scale: 0.65)
         return SCNBox(width: 1.05, height: 0.75, length: 0.6, chamferRadius: 0.2)
     }
 
@@ -299,6 +324,7 @@ enum ItemNodeFactory {
         // 틈으로 삐져나온 면발
         part(SCNTorus(ringRadius: 0.16, pipeRadius: 0.06), cheeseYellow,
              position: SCNVector3(0, 0.30, 0.12), in: parent)
+        addFace(to: parent, center: SCNVector3(0, -0.22, 0.33), scale: 0.8)
         return SCNCone(topRadius: 0.42, bottomRadius: 0.30, height: 1.0)
     }
 
@@ -311,6 +337,7 @@ enum ItemNodeFactory {
             part(SCNSphere(radius: 0.09), skin,
                  position: SCNVector3(dx, 0.26, 0), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.0, 0.29), scale: 0.85)
         return SCNBox(width: 1.1, height: 0.62, length: 0.62, chamferRadius: 0.25)
     }
 
@@ -330,6 +357,7 @@ enum ItemNodeFactory {
             part(SCNSphere(radius: 0.08), color,
                  position: SCNVector3(x, 0.20, z), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.0, 0.42), scale: 0.85)
         return SCNCylinder(radius: 0.46, height: 0.40)
     }
 
@@ -344,6 +372,7 @@ enum ItemNodeFactory {
                  position: SCNVector3(x, 0.12, Float(i % 2) * 0.12 - 0.06),
                  euler: SCNVector3(0, 0, Float(i - 2) * 0.08), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, -0.26, 0.23), scale: 0.7)
         return SCNBox(width: 0.85, height: 1.15, length: 0.5, chamferRadius: 0.1)
     }
 
@@ -360,6 +389,7 @@ enum ItemNodeFactory {
             part(SCNSphere(radius: 0.06), cheeseYellow,
                  position: SCNVector3(dx, 0.30, 0), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, -0.06, 0.24), scale: 0.7)
         return SCNBox(width: 1.35, height: 0.6, length: 0.55, chamferRadius: 0.2)
     }
 
@@ -381,6 +411,7 @@ enum ItemNodeFactory {
                  position: SCNVector3(0.36 * cos(angle), 0.16, 0.36 * sin(angle)),
                  euler: SCNVector3(Float.pi / 2, angle + 0.6, 0), in: parent)
         }
+        addFace(to: parent, center: SCNVector3(0, 0.02, 0.50), scale: 0.7)
         return SCNCylinder(radius: 0.56, height: 0.42)
     }
 
@@ -388,10 +419,9 @@ enum ItemNodeFactory {
     private static func buildCola(in parent: SCNNode) -> SCNGeometry {
         part(SCNCylinder(radius: 0.32, height: 0.78), sauceRed,
              position: SCNVector3(0, -0.05, 0), in: parent)
-        part(SCNSphere(radius: 0.11), riceWhite,
-             position: SCNVector3(0, -0.05, 0.28), in: parent)
         part(SCNCylinder(radius: 0.34, height: 0.09), riceWhite,
              position: SCNVector3(0, 0.38, 0), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.0, 0.30), scale: 0.8)
         part(SCNCylinder(radius: 0.05, height: 0.5), riceWhite,
              position: SCNVector3(0.10, 0.62, 0),
              euler: SCNVector3(0, 0, 0.28), in: parent)
@@ -404,6 +434,7 @@ enum ItemNodeFactory {
              position: SCNVector3(0, -0.42, 0), in: parent)
         part(SCNBox(width: 0.42, height: 0.42, length: 0.52, chamferRadius: 0.02), seaweedBlack,
              position: SCNVector3(0, -0.24, 0), in: parent)
+        addFace(to: parent, center: SCNVector3(0, 0.02, 0.15), scale: 0.75)
         return SCNBox(width: 1.05, height: 0.9, length: 0.5, chamferRadius: 0.12)
     }
 }

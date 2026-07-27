@@ -18,8 +18,8 @@ final class GameController: NSObject {
     // 플레이 박스 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식).
     // 상단 HUD와 하단 트레이/부스터 UI에 겹치지 않도록 화면 중앙 영역만 사용한다.
     // 카메라 기준 화면 세로 가시 범위는 대략 y -0.8 ~ 13.8.
-    private let tankWidth: Float = 7
-    private let tankDepth: Float = 3.8
+    private let tankWidth: Float = 6.6
+    private let tankDepth: Float = 4.2
     private let boxBottom: Float = 2.4   // 박스 바닥 높이 (트레이/부스터 위)
     private let boxTop: Float = 10.6     // 박스 천장 높이 (HUD 아래)
     private var boxCenterY: Float { (boxBottom + boxTop) / 2 }
@@ -76,7 +76,8 @@ final class GameController: NSObject {
         let ambient = SCNNode()
         ambient.light = SCNLight()
         ambient.light?.type = .ambient
-        ambient.light?.intensity = 650
+        ambient.light?.intensity = 750
+        ambient.light?.color = UIColor(red: 1.0, green: 0.97, blue: 0.92, alpha: 1)
         scene.rootNode.addChildNode(ambient)
 
         let sun = SCNNode()
@@ -191,10 +192,11 @@ final class GameController: NSObject {
                         Float.random(in: (self.boxTop - 1.8)...(self.boxTop - 0.9)),
                         Float.random(in: (-self.tankDepth / 2 + 0.6)...(self.tankDepth / 2 - 0.6))
                     )
+                    // 표정이 정면(+z)에 있으므로 살짝만 기울여 스폰 (물리로 자연스럽게 섞임)
                     node.eulerAngles = SCNVector3(
-                        Float.random(in: 0...Float.pi),
-                        Float.random(in: 0...Float.pi),
-                        Float.random(in: 0...Float.pi)
+                        Float.random(in: -0.45...0.45),
+                        Float.random(in: -0.45...0.45),
+                        Float.random(in: -0.45...0.45)
                     )
                     self.itemNodes.append(node)
                     self.scene.rootNode.addChildNode(node)
