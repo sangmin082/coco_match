@@ -1,19 +1,21 @@
 import Foundation
 
 /// 보드에 등장하는 아이템 종류 (총 59종).
-/// 순서가 곧 해금 순서다: 초반은 과일 7종으로 시작하고,
-/// 이후 음식과 과일이 번갈아 추가되며 메뉴가 계속 풍성해진다.
+/// 순서가 곧 해금 순서다: 과일 27종이 먼저 하나씩 추가되고,
+/// 과일이 모두 나온 뒤 야식 32종이 이어서 하나씩 추가된다.
+/// (해금된 아이템은 이후 레벨에서도 계속 등장 — 끊기지 않는다)
 enum ItemType: String, CaseIterable, Identifiable, Hashable {
-    // ── 시작 과일 7종
+    // ── 과일 27종 (먼저 해금)
     case coconut, apple, banana, strawberry, orange, watermelon, pineapple
-    // ── 이후 음식·과일 번갈아 해금
-    case chicken, grape, pizza, peach, burger, lemon, tteokbokki, cherry
-    case ramen, kiwi, mandu, pear, gimbap, mango, fries, blueberry
-    case hotdog, melon, donut, persimmon, cola, plum, onigiri, fig
-    case sushi, pomegranate, bungeoppang, dragonfruit, hotteok, avocado, corndog, tomato
-    case friedShrimp, papaya, eggTart, hallabong, croissant, lime, pancake, greenGrape
-    case icecream, cupcake, chocolate, cookie, candy, lollipop, skewer, friedEgg
-    case toast, sandwich, shavedIce, boba
+    case grape, peach, lemon, cherry, kiwi, pear, mango
+    case blueberry, melon, persimmon, plum, fig, pomegranate, dragonfruit
+    case avocado, tomato, papaya, hallabong, lime, greenGrape
+    // ── 야식·음식 32종 (과일 이후 해금)
+    case chicken, pizza, burger, tteokbokki, ramen, mandu, gimbap
+    case fries, hotdog, donut, cola, onigiri, sushi, bungeoppang
+    case hotteok, corndog, friedShrimp, eggTart, croissant, pancake
+    case icecream, cupcake, chocolate, cookie, candy, lollipop, skewer
+    case friedEgg, toast, sandwich, shavedIce, boba
 
     var id: String { rawValue }
 
