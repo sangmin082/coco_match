@@ -71,10 +71,11 @@ struct ResultOverlay: View {
             VStack(spacing: 18) {
                 Text(title)
                     .font(.title.bold())
+                    .foregroundStyle(Color(white: 0.12))
                     .multilineTextAlignment(.center)
                 Text(subtitle)
                     .font(.headline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(white: 0.45))
 
                 if let extra {
                     Button(action: extra.1) {
