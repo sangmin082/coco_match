@@ -23,7 +23,7 @@ struct ContentView: View {
             )
             .id("game-\(level)-\(session)")
         } else {
-            MenuView(unlockedLevel: unlockedLevel) { level in
+            MenuView { level in
                 currentLevel = level
                 session += 1
             }
@@ -33,7 +33,7 @@ struct ContentView: View {
 
 /// 메인 메뉴 + 레벨 선택 그리드
 struct MenuView: View {
-    let unlockedLevel: Int
+    @AppStorage("unlockedLevel") private var unlockedLevel = 1
     let onSelect: (Int) -> Void
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
@@ -77,17 +77,28 @@ struct MenuView: View {
                 // 테스트용: 잠금 해제 없이 최고 난이도(레벨 100)로 바로 입장
                 // (디버그/TestFlight에서만 노출, 앱스토어 정식 빌드에서는 숨김)
                 if AppEnvironment.isTestBuild {
-                    Button {
-                        onSelect(LevelData.maxLevel)
-                    } label: {
-                        Text("🧪 레벨 \(LevelData.maxLevel) 테스트")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 40)
-                            .background(.purple.opacity(0.8), in: RoundedRectangle(cornerRadius: 12))
+                    HStack(spacing: 10) {
+                        Button {
+                            onSelect(LevelData.maxLevel)
+                        } label: {
+                            Text("🧪 레벨 \(LevelData.maxLevel) 테스트")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 40)
+                                .background(.purple.opacity(0.8), in: RoundedRectangle(cornerRadius: 12))
+                        }
+                        Button {
+                            unlockedLevel = 1
+                        } label: {
+                            Text("🔄 진행 초기화")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 110, height: 40)
+                                .background(.gray.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+                        }
                     }
-                    .padding(.horizontal, 60)
+                    .padding(.horizontal, 40)
                 }
                 Color.clear.frame(height: 10)
 

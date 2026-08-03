@@ -63,7 +63,9 @@ struct GameView: View {
         }
         .onChange(of: gameState.phase) { _, phase in
             controller?.setPaused(phase != .playing)
-            if phase == .won {
+            // 정상 진행 중인 레벨의 클리어만 해금에 반영한다.
+            // (테스트 버튼으로 점프한 고레벨 클리어가 전체를 풀어버리는 것 방지)
+            if phase == .won, levelNumber <= unlockedLevel {
                 unlockedLevel = max(unlockedLevel, levelNumber + 1)
             }
         }
