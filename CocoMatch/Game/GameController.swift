@@ -186,7 +186,7 @@ final class GameController: NSObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                 guard let self else { return }
                 for type in wave {
-                    let node = ItemNodeFactory.makeNode(for: type)
+                    let node = ItemNodeFactory.makeNode(for: type, scale: level.itemScale)
                     node.position = SCNVector3(
                         Float.random(in: (-self.tankWidth / 2 + 0.8)...(self.tankWidth / 2 - 0.8)),
                         Float.random(in: (self.boxTop - 1.8)...(self.boxTop - 0.9)),

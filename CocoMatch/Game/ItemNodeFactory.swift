@@ -8,7 +8,7 @@ import UIKit
 /// 물리 충돌은 전체 크기를 근사하는 단순 도형(collision)으로 계산한다.
 enum ItemNodeFactory {
 
-    static func makeNode(for type: ItemType) -> SCNNode {
+    static func makeNode(for type: ItemType, scale levelScale: CGFloat = 1.25) -> SCNNode {
         let node = SCNNode()
         node.name = type.rawValue
 
@@ -73,10 +73,22 @@ enum ItemNodeFactory {
         case .sandwich: collision = buildSandwich(in: node)
         case .shavedIce: collision = buildShavedIce(in: node)
         case .boba: collision = buildBoba(in: node)
+        case .cheese: collision = buildCheese(in: node)
+        case .milk: collision = buildMilk(in: node)
+        case .juiceBox: collision = buildJuiceBox(in: node)
+        case .cakeSlice: collision = buildCakeSlice(in: node)
+        case .watermelonSlice: collision = buildWatermelonSlice(in: node)
+        case .popsicle: collision = buildPopsicle(in: node)
+        case .waffle: collision = buildWaffle(in: node)
+        case .pieSlice: collision = buildPieSlice(in: node)
+        case .takeout: collision = buildTakeout(in: node)
+        case .popcorn: collision = buildPopcorn(in: node)
+        case .butter: collision = buildButter(in: node)
+        case .carrot: collision = buildCarrot(in: node)
         }
 
-        // 아이템을 큼직하게 (화면 가로에 4개 남짓)
-        let itemScale: CGFloat = 1.25
+        // 레벨 스케일 × 종류별 크기 편차 (체리는 한입, 수박은 묵직하게)
+        let itemScale: CGFloat = levelScale * sizeMultiplier(for: type)
         node.scale = SCNVector3(Float(itemScale), Float(itemScale), Float(itemScale))
         let shape = SCNPhysicsShape(geometry: collision,
                                     options: [SCNPhysicsShape.Option.scale: itemScale])
@@ -89,6 +101,22 @@ enum ItemNodeFactory {
         body.damping = 0.1
         node.physicsBody = body
         return node
+    }
+
+    /// 종류별 크기 편차 — 모든 아이템이 같은 크기로 보이지 않게 한다
+    private static func sizeMultiplier(for type: ItemType) -> CGFloat {
+        switch type {
+        // 작은 아이템 (한입 크기)
+        case .cherry, .blueberry, .plum, .lime, .strawberry,
+             .candy, .cookie, .eggTart, .juiceBox, .butter, .mandu:
+            return 0.85
+        // 큰 아이템 (묵직한 존재감)
+        case .watermelon, .melon, .pineapple, .milk, .cakeSlice,
+             .watermelonSlice, .ramen, .boba, .shavedIce, .cheese:
+            return 1.15
+        default:
+            return 1.0
+        }
     }
 
     // MARK: - Helpers
@@ -1322,6 +1350,221 @@ enum ItemNodeFactory {
              position: SCNVector3(0.06, 0.58, 0),
              euler: SCNVector3(0, 0, 0.18), gloss: 0.6, in: parent)
         return SCNCylinder(radius: 0.34, height: 1.25)
+    }
+
+    // MARK: - 각진 아이템 텍스처
+
+    /// 팝콘 상자: 흰 바탕 + 빨간 세로 줄무늬
+    private static let popcornTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1))
+        c.setFillColor(UIColor(red: 0.82, green: 0.15, blue: 0.13, alpha: 1).cgColor)
+        var x: CGFloat = 0
+        while x < s.width {
+            c.fill(CGRect(x: x, y: 0, width: 26, height: s.height))
+            x += 52
+        }
+    }
+
+    /// 와플: 노릇한 바탕 + 격자 홈
+    private static let waffleTexture: UIImage = texture { c, s in
+        fillBase(c, s, UIColor(red: 0.88, green: 0.65, blue: 0.34, alpha: 1))
+        c.setStrokeColor(UIColor(red: 0.68, green: 0.45, blue: 0.20, alpha: 0.9).cgColor)
+        c.setLineWidth(10)
+        var p: CGFloat = 32
+        while p < s.width {
+            c.move(to: CGPoint(x: p, y: 0)); c.addLine(to: CGPoint(x: p, y: s.height))
+            c.move(to: CGPoint(x: 0, y: p)); c.addLine(to: CGPoint(x: s.width, y: p))
+            c.strokePath()
+            p += 64
+        }
+    }
+
+    // MARK: - 각진 아이템 (신규 12종)
+
+    /// 🧀 치즈 웨지: 옆으로 누운 노란 삼각 + 치즈 구멍
+    private static func buildCheese(in parent: SCNNode) -> SCNGeometry {
+        let cheddar = UIColor(red: 0.97, green: 0.76, blue: 0.22, alpha: 1)
+        let hole = UIColor(red: 0.82, green: 0.60, blue: 0.14, alpha: 1)
+        part(SCNPyramid(width: 0.62, height: 0.95, length: 0.55), cheddar,
+             position: SCNVector3(-0.47, 0, 0),
+             euler: SCNVector3(0, 0, -Float.pi / 2), gloss: 0.45, in: parent)
+        for (x, y, z) in [(-0.25, 0.12, 0.16), (0.05, -0.08, 0.14), (-0.38, -0.14, 0.12)] {
+            part(SCNSphere(radius: 0.075), hole,
+                 position: SCNVector3(Float(x), Float(y), Float(z)),
+                 scale: SCNVector3(1, 1, 0.4), gloss: 0.3, in: parent)
+        }
+        return SCNBox(width: 1.05, height: 0.65, length: 0.6, chamferRadius: 0.06)
+    }
+
+    /// 🥛 우유팩: 흰 몸통 + 지붕 접힘 + 파란 띠
+    private static func buildMilk(in parent: SCNNode) -> SCNGeometry {
+        let blue = UIColor(red: 0.30, green: 0.52, blue: 0.85, alpha: 1)
+        part(SCNBox(width: 0.55, height: 0.78, length: 0.55, chamferRadius: 0.02), riceWhite,
+             position: SCNVector3(0, -0.12, 0), gloss: 0.35, in: parent)
+        part(SCNPyramid(width: 0.57, height: 0.32, length: 0.57), riceWhite,
+             position: SCNVector3(0, 0.27, 0), gloss: 0.35, in: parent)
+        part(SCNBox(width: 0.57, height: 0.20, length: 0.57, chamferRadius: 0.02), blue,
+             position: SCNVector3(0, -0.02, 0), gloss: 0.35, in: parent)
+        part(SCNBox(width: 0.10, height: 0.14, length: 0.03, chamferRadius: 0.01), riceWhite,
+             position: SCNVector3(0, 0.50, 0), gloss: 0.35, in: parent)
+        return SCNBox(width: 0.6, height: 1.15, length: 0.6, chamferRadius: 0.05)
+    }
+
+    /// 🧃 주스팩: 작은 주황 팩 + 빨대
+    private static func buildJuiceBox(in parent: SCNNode) -> SCNGeometry {
+        let orange = UIColor(red: 0.95, green: 0.55, blue: 0.15, alpha: 1)
+        part(SCNBox(width: 0.52, height: 0.72, length: 0.34, chamferRadius: 0.03), orange,
+             position: SCNVector3(0, -0.06, 0), gloss: 0.4, in: parent)
+        part(SCNBox(width: 0.40, height: 0.34, length: 0.36, chamferRadius: 0.02), riceWhite,
+             position: SCNVector3(0, -0.02, 0), gloss: 0.4, in: parent)
+        part(SCNSphere(radius: 0.10), orange,
+             position: SCNVector3(0, -0.02, 0.19),
+             scale: SCNVector3(1, 1, 0.3), gloss: 0.5, in: parent)
+        part(SCNCylinder(radius: 0.035, height: 0.42), riceWhite,
+             position: SCNVector3(0.16, 0.44, 0),
+             euler: SCNVector3(0, 0, 0.35), gloss: 0.4, in: parent)
+        return SCNBox(width: 0.58, height: 1.0, length: 0.4, chamferRadius: 0.05)
+    }
+
+    /// 🍰 조각 케이크: 2단 큐브 + 크림 + 딸기
+    private static func buildCakeSlice(in parent: SCNNode) -> SCNGeometry {
+        let sponge = UIColor(red: 0.98, green: 0.93, blue: 0.80, alpha: 1)
+        let pinkCream = UIColor(red: 0.97, green: 0.70, blue: 0.76, alpha: 1)
+        part(SCNBox(width: 0.62, height: 0.30, length: 0.62, chamferRadius: 0.02), sponge,
+             position: SCNVector3(0, -0.24, 0), gloss: 0.3, in: parent)
+        part(SCNBox(width: 0.62, height: 0.12, length: 0.62, chamferRadius: 0.01), pinkCream,
+             position: SCNVector3(0, -0.03, 0), gloss: 0.5, in: parent)
+        part(SCNBox(width: 0.62, height: 0.30, length: 0.62, chamferRadius: 0.02), sponge,
+             position: SCNVector3(0, 0.18, 0), gloss: 0.3, in: parent)
+        part(SCNSphere(radius: 0.20), riceWhite,
+             position: SCNVector3(0, 0.38, 0),
+             scale: SCNVector3(1, 0.5, 1), gloss: 0.55, in: parent)
+        part(SCNSphere(radius: 0.10), UIColor(red: 0.85, green: 0.15, blue: 0.22, alpha: 1),
+             position: SCNVector3(0, 0.50, 0), gloss: 0.85, in: parent)
+        return SCNBox(width: 0.68, height: 1.05, length: 0.68, chamferRadius: 0.05)
+    }
+
+    /// 🍉 수박 조각: 위로 뾰족한 빨간 삼각 + 초록 껍질 + 씨
+    private static func buildWatermelonSlice(in parent: SCNNode) -> SCNGeometry {
+        part(SCNPyramid(width: 0.95, height: 0.90, length: 0.30),
+             UIColor(red: 0.94, green: 0.30, blue: 0.30, alpha: 1),
+             position: SCNVector3(0, -0.38, 0), gloss: 0.55, in: parent)
+        part(SCNBox(width: 0.98, height: 0.07, length: 0.34, chamferRadius: 0.01), riceWhite,
+             position: SCNVector3(0, -0.40, 0), gloss: 0.4, in: parent)
+        part(SCNBox(width: 0.98, height: 0.13, length: 0.34, chamferRadius: 0.02),
+             UIColor(red: 0.20, green: 0.50, blue: 0.24, alpha: 1),
+             position: SCNVector3(0, -0.50, 0), gloss: 0.5, in: parent)
+        for (x, y) in [(-0.14, -0.10), (0.12, -0.16), (0.0, 0.10), (-0.05, -0.28)] {
+            part(SCNSphere(radius: 0.035), seaweedBlack,
+                 position: SCNVector3(Float(x), Float(y), 0.14),
+                 scale: SCNVector3(0.8, 1.2, 0.4), gloss: 0.5, in: parent)
+        }
+        return SCNBox(width: 1.0, height: 1.05, length: 0.38, chamferRadius: 0.08)
+    }
+
+    /// 🍨 아이스바: 둥근 모서리 바 + 한입 + 나무 스틱
+    private static func buildPopsicle(in parent: SCNNode) -> SCNGeometry {
+        let soda = UIColor(red: 0.45, green: 0.78, blue: 0.92, alpha: 1)
+        part(SCNBox(width: 0.52, height: 0.80, length: 0.26, chamferRadius: 0.13), soda,
+             position: SCNVector3(0, 0.16, 0), gloss: 0.7, in: parent)
+        part(SCNSphere(radius: 0.11),
+             UIColor(red: 0.30, green: 0.62, blue: 0.80, alpha: 1),
+             position: SCNVector3(0.24, 0.48, 0),
+             scale: SCNVector3(1, 1, 0.5), gloss: 0.5, in: parent)
+        part(SCNBox(width: 0.12, height: 0.42, length: 0.06, chamferRadius: 0.03),
+             UIColor(red: 0.80, green: 0.62, blue: 0.40, alpha: 1),
+             position: SCNVector3(0, -0.42, 0), gloss: 0.3, in: parent)
+        return SCNBox(width: 0.58, height: 1.25, length: 0.32, chamferRadius: 0.1)
+    }
+
+    /// 🧇 와플: 격자 사각판 + 버터 + 시럽
+    private static func buildWaffle(in parent: SCNNode) -> SCNGeometry {
+        part(SCNBox(width: 0.88, height: 0.16, length: 0.88, chamferRadius: 0.04), waffleTexture,
+             gloss: 0.35, in: parent)
+        for row in 0..<3 {
+            for col in 0..<3 {
+                part(SCNBox(width: 0.20, height: 0.08, length: 0.20, chamferRadius: 0.03), waffleTexture,
+                     position: SCNVector3(Float(col) * 0.27 - 0.27, 0.10, Float(row) * 0.27 - 0.27),
+                     gloss: 0.35, in: parent)
+            }
+        }
+        part(SCNBox(width: 0.18, height: 0.10, length: 0.18, chamferRadius: 0.02), mustardYellow,
+             position: SCNVector3(0, 0.20, 0),
+             euler: SCNVector3(0, 0.4, 0), gloss: 0.6, in: parent)
+        return SCNBox(width: 0.92, height: 0.35, length: 0.92, chamferRadius: 0.06)
+    }
+
+    /// 🥧 파이 조각: 노릇한 웨지 + 크러스트 + 딸기잼
+    private static func buildPieSlice(in parent: SCNNode) -> SCNGeometry {
+        part(SCNPyramid(width: 0.85, height: 0.95, length: 0.30), bunTexture,
+             position: SCNVector3(0, 0.47, 0),
+             euler: SCNVector3(Float.pi, 0, 0), gloss: 0.3, in: parent)
+        part(SCNCapsule(capRadius: 0.13, height: 0.88), bunTexture,
+             position: SCNVector3(0, 0.48, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2), gloss: 0.3, in: parent)
+        for (x, y) in [(-0.12, 0.20), (0.10, 0.05), (0.0, -0.18)] {
+            part(SCNSphere(radius: 0.07), sauceRed,
+                 position: SCNVector3(Float(x), Float(y), 0.14),
+                 scale: SCNVector3(1, 1, 0.5), gloss: 0.8, in: parent)
+        }
+        return SCNBox(width: 0.9, height: 1.1, length: 0.36, chamferRadius: 0.08)
+    }
+
+    /// 🥡 테이크아웃 박스: 흰 상자 + 빨간 줄 + 손잡이
+    private static func buildTakeout(in parent: SCNNode) -> SCNGeometry {
+        part(SCNBox(width: 0.62, height: 0.70, length: 0.52, chamferRadius: 0.03), riceWhite,
+             position: SCNVector3(0, -0.08, 0), gloss: 0.35, in: parent)
+        part(SCNBox(width: 0.64, height: 0.06, length: 0.54, chamferRadius: 0.01), riceWhite,
+             position: SCNVector3(0, 0.28, 0), gloss: 0.35, in: parent)
+        part(SCNBox(width: 0.05, height: 0.34, length: 0.54, chamferRadius: 0.01), sauceRed,
+             position: SCNVector3(0, -0.10, 0),
+             scale: SCNVector3(1, 1, 1.01), gloss: 0.35, in: parent)
+        part(SCNTorus(ringRadius: 0.20, pipeRadius: 0.025),
+             UIColor(red: 0.65, green: 0.65, blue: 0.68, alpha: 1),
+             position: SCNVector3(0, 0.40, 0),
+             euler: SCNVector3(0, 0, Float.pi / 2), gloss: 0.7, in: parent)
+        return SCNBox(width: 0.68, height: 1.0, length: 0.58, chamferRadius: 0.05)
+    }
+
+    /// 🍿 팝콘: 줄무늬 상자 + 넘치는 팝콘
+    private static func buildPopcorn(in parent: SCNNode) -> SCNGeometry {
+        let kernel = UIColor(red: 0.98, green: 0.92, blue: 0.75, alpha: 1)
+        part(SCNBox(width: 0.66, height: 0.72, length: 0.46, chamferRadius: 0.03), popcornTexture,
+             position: SCNVector3(0, -0.20, 0), gloss: 0.35, in: parent)
+        let puffs: [(Float, Float, Float, Float)] = [
+            (0, 0.28, 0, 0.16), (-0.22, 0.22, 0.08, 0.13), (0.22, 0.24, -0.06, 0.13),
+            (-0.10, 0.40, -0.10, 0.12), (0.12, 0.42, 0.10, 0.12), (0.0, 0.52, 0.0, 0.11),
+        ]
+        for (x, y, z, r) in puffs {
+            part(SCNSphere(radius: CGFloat(r)), kernel,
+                 position: SCNVector3(x, y, z), gloss: 0.3, in: parent)
+        }
+        return SCNBox(width: 0.72, height: 1.15, length: 0.52, chamferRadius: 0.06)
+    }
+
+    /// 🧈 버터: 황금빛 사각 덩어리 + 윗장
+    private static func buildButter(in parent: SCNNode) -> SCNGeometry {
+        let gold = UIColor(red: 0.97, green: 0.85, blue: 0.45, alpha: 1)
+        part(SCNBox(width: 0.78, height: 0.34, length: 0.50, chamferRadius: 0.06), gold,
+             position: SCNVector3(0, -0.09, 0), gloss: 0.55, in: parent)
+        part(SCNBox(width: 0.46, height: 0.18, length: 0.34, chamferRadius: 0.05),
+             UIColor(red: 0.99, green: 0.92, blue: 0.62, alpha: 1),
+             position: SCNVector3(-0.05, 0.14, 0),
+             euler: SCNVector3(0, 0.25, 0), gloss: 0.55, in: parent)
+        return SCNBox(width: 0.82, height: 0.62, length: 0.55, chamferRadius: 0.08)
+    }
+
+    /// 🥕 당근: 주황 원뿔 + 초록 줄기
+    private static func buildCarrot(in parent: SCNNode) -> SCNGeometry {
+        part(SCNCone(topRadius: 0.26, bottomRadius: 0.02, height: 1.0),
+             UIColor(red: 0.95, green: 0.52, blue: 0.12, alpha: 1),
+             position: SCNVector3(0, -0.10, 0), gloss: 0.4, in: parent)
+        for (dx, tilt) in [(-0.08, 0.35), (0.0, 0.0), (0.08, -0.35)] {
+            part(SCNCapsule(capRadius: 0.05, height: 0.36), leafGreen,
+                 position: SCNVector3(Float(dx), 0.52, 0),
+                 euler: SCNVector3(0, 0, Float(tilt)), gloss: 0.4, in: parent)
+        }
+        return SCNCapsule(capRadius: 0.28, height: 1.3)
     }
 }
 

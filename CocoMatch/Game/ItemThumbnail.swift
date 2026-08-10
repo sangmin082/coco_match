@@ -12,7 +12,8 @@ enum ItemThumbnail {
         let scene = SCNScene()
         scene.background.contents = UIColor.clear
 
-        let node = ItemNodeFactory.makeNode(for: type)
+        // 트레이 썸네일은 균일한 크기로 렌더링 (레벨 스케일·크기 편차 미적용)
+        let node = ItemNodeFactory.makeNode(for: type, scale: 1.0)
         node.physicsBody = nil
         node.eulerAngles = SCNVector3(-0.35, 0.55, 0)
         scene.rootNode.addChildNode(node)
