@@ -17,7 +17,7 @@ final class GameController: NSObject {
 
     // 갈매기 게임식 총량 유지: 화면에는 최대 maxOnScreen개만 렌더링하고
     // 나머지는 대기열에 뒀다가 아이템을 수집할 때마다 새로 생성한다.
-    private let maxOnScreen = 100
+    private let maxOnScreen = 70
     private var pendingQueue: [ItemType] = []
     private var itemScale: CGFloat = 1.0
     private var rescueTimer: Timer?
@@ -376,8 +376,9 @@ final class GameController: NSObject {
             // z축은 상수 힘으로 뒷벽에 살짝 붙여 얕은 수조에서 안정시킨다.
             let g = data.gravity
             let k = 9.8
+            // 기울임 반응을 크게 — 살짝만 기울여도 더미가 시원하게 쏠린다
             self.scene.physicsWorld.gravity = SCNVector3(
-                Float(g.x * k * 0.9),
+                Float(g.x * k * 2.0),
                 0,
                 -2.2
             )
