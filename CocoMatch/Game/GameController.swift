@@ -97,8 +97,8 @@ final class GameController: NSObject {
         scene.rootNode.addChildNode(sun)
     }
 
-    /// 화면(박스) 정중앙으로 아이템을 끌어당기는 방사형 중력장.
-    /// 아이템들이 중앙에 덩어리로 뭉치고, 기울이면 덩어리째 쏠린다 (갈매기 게임식).
+    /// 중앙 "바닥"(플레이어가 보는 노란 뒷벽)에 달린 약한 자석 같은 방사형 중력장.
+    /// 아이템들이 바닥 중앙에 덩어리로 모이고, 기울이면 덩어리째 쏠린다 (갈매기 게임식).
     private func setupCenterGravityField() {
         let field = SCNPhysicsField.radialGravity()
         field.strength = 5.5
@@ -106,7 +106,7 @@ final class GameController: NSObject {
         field.minimumDistance = 0.5    // 중심 근처 떨림 방지
         let fieldNode = SCNNode()
         fieldNode.physicsField = field
-        fieldNode.position = SCNVector3(0, boxCenterY, 0)
+        fieldNode.position = SCNVector3(0, boxCenterY, -tankDepth / 2 + 0.3)
         scene.rootNode.addChildNode(fieldNode)
     }
 
@@ -204,27 +204,29 @@ final class GameController: NSObject {
     }
 
     /// 아이템 1개 생성. 초기 웨이브는 박스 상단에서 떨어지고,
-    /// 대기열 보충(fromBottom)은 박스 맨 바닥에서 조용히 나타나
-    /// 더미 밑으로 스며든다 — 플레이어가 새 스폰을 눈치채지 못하게.
-    private func spawnItem(_ type: ItemType, fromBottom: Bool = false) {
+    /// 대기열 보충(hiddenInPile)은 아이템 더미 맨 아래층(노란 바닥 쪽)
+    /// 한가운데서 생성돼 기존 더미에 가려진다 — 플레이어가 스폰을 눈치채지 못하게.
+    private func spawnItem(_ type: ItemType, hiddenInPile: Bool = false) {
         let node = ItemNodeFactory.makeNode(for: type, scale: itemScale)
-        let x = Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8))
-        let z = Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
-        if fromBottom {
-            node.position = SCNVector3(x, boxBottom + 0.6, z)
+        if hiddenInPile {
+            // 더미 중앙, 바닥(뒷벽)에 최대한 붙여 생성 → 위에 쌓인 아이템들에 가려짐
+            node.position = SCNVector3(
+                Float.random(in: -1.4...1.4),
+                boxCenterY + Float.random(in: -1.2...1.2),
+                -tankDepth / 2 + 0.7
+            )
         } else {
-            node.position = SCNVector3(x, Float.random(in: (boxTop - 1.8)...(boxTop - 0.9)), z)
+            node.position = SCNVector3(
+                Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8)),
+                Float.random(in: (boxTop - 1.8)...(boxTop - 0.9)),
+                Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
+            )
         }
         node.eulerAngles = SCNVector3(
             Float.random(in: -0.45...0.45),
             Float.random(in: -0.45...0.45),
             Float.random(in: -0.45...0.45)
         )
-        if fromBottom {
-            // 임펄스 없이 부드럽게 페이드 인 — 아이템 더미에 자연스럽게 섞인다
-            node.opacity = 0
-            node.runAction(SCNAction.fadeIn(duration: 0.4))
-        }
         itemNodes.append(node)
         scene.rootNode.addChildNode(node)
     }
@@ -342,11 +344,11 @@ final class GameController: NSObject {
             self?.gameState?.collect(type)
         }
 
-        // 대기열 보충: 하나 수집할 때마다 새 아이템이 바닥에서 조용히 스며든다 (총량 유지)
+        // 대기열 보충: 하나 수집할 때마다 새 아이템이 더미 밑에서 조용히 생겨난다 (총량 유지)
         if !pendingQueue.isEmpty {
             let next = pendingQueue.removeFirst()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-                self?.spawnItem(next, fromBottom: true)
+                self?.spawnItem(next, hiddenInPile: true)
             }
         }
     }
