@@ -204,13 +204,14 @@ final class GameController: NSObject {
     }
 
     /// 아이템 1개 생성. 초기 웨이브는 박스 상단에서 떨어지고,
-    /// 대기열 보충(fromBottom)은 박스 맨 밑에서 위로 튀어나온다 (갈매기 게임식)
+    /// 대기열 보충(fromBottom)은 박스 맨 바닥에서 조용히 나타나
+    /// 더미 밑으로 스며든다 — 플레이어가 새 스폰을 눈치채지 못하게.
     private func spawnItem(_ type: ItemType, fromBottom: Bool = false) {
         let node = ItemNodeFactory.makeNode(for: type, scale: itemScale)
         let x = Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8))
         let z = Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
         if fromBottom {
-            node.position = SCNVector3(x, boxBottom + 0.7, z)
+            node.position = SCNVector3(x, boxBottom + 0.6, z)
         } else {
             node.position = SCNVector3(x, Float.random(in: (boxTop - 1.8)...(boxTop - 0.9)), z)
         }
@@ -219,17 +220,13 @@ final class GameController: NSObject {
             Float.random(in: -0.45...0.45),
             Float.random(in: -0.45...0.45)
         )
+        if fromBottom {
+            // 임펄스 없이 부드럽게 페이드 인 — 아이템 더미에 자연스럽게 섞인다
+            node.opacity = 0
+            node.runAction(SCNAction.fadeIn(duration: 0.4))
+        }
         itemNodes.append(node)
         scene.rootNode.addChildNode(node)
-        if fromBottom {
-            // 바닥에서 뿅 하고 솟구치는 임펄스
-            node.physicsBody?.applyForce(
-                SCNVector3(Float.random(in: -0.8...0.8),
-                           Float.random(in: 5.5...7.5),
-                           Float.random(in: -0.4...0.4)),
-                asImpulse: true
-            )
-        }
     }
 
     // MARK: - Motion (기울임 = 중력, 흔들기 = 임펄스)
@@ -345,7 +342,7 @@ final class GameController: NSObject {
             self?.gameState?.collect(type)
         }
 
-        // 대기열 보충: 하나 수집할 때마다 새 아이템이 맨 밑에서 튀어나온다 (총량 유지)
+        // 대기열 보충: 하나 수집할 때마다 새 아이템이 바닥에서 조용히 스며든다 (총량 유지)
         if !pendingQueue.isEmpty {
             let next = pendingQueue.removeFirst()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
