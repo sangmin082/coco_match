@@ -16,10 +16,12 @@ final class GameState: ObservableObject {
 
     @Published var phase: GamePhase = .playing
     @Published var tray: [ItemType] = []
+    /// 빼두기 버퍼: 트레이 위 선반. 같은 종류가 모여 3개가 완성되면 자동으로 돌아와 매치된다.
+    @Published var buffer: [ItemType] = []
     @Published var matchedCount = 0
     @Published var score = 0
     @Published var timeRemaining: Int
-    @Published var shuffleLeft = 3
+    @Published var holdLeft = 2
     @Published var magnetLeft = 2
     @Published var timeBoostLeft = 1
     @Published var usedRevive = false
@@ -57,6 +59,20 @@ final class GameState: ObservableObject {
             tray.append(type)
             tray.sort { $0.rawValue < $1.rawValue }
         }
+        // 빼둔 아이템과 합쳐 3개가 완성되면 버퍼에서 자동으로 돌아온다 (갈매기 게임식)
+        let inTray = tray.filter { $0 == type }.count
+        let inBuffer = buffer.filter { $0 == type }.count
+        if inTray < 3, inBuffer > 0, inTray + inBuffer >= 3 {
+            withAnimation(.spring(duration: 0.25)) {
+                for _ in 0..<(3 - inTray) {
+                    if let index = buffer.firstIndex(of: type) {
+                        buffer.remove(at: index)
+                        tray.append(type)
+                    }
+                }
+                tray.sort { $0.rawValue < $1.rawValue }
+            }
+        }
         if tray.filter({ $0 == type }).count >= 3 {
             score += 30
             matchedCount += 3
@@ -78,6 +94,19 @@ final class GameState: ObservableObject {
         guard phase == .playing, timeBoostLeft > 0 else { return }
         timeBoostLeft -= 1
         timeRemaining += 30
+    }
+
+    /// ↩️ 빼두기: 트레이 앞쪽 아이템 최대 3개를 위 선반(버퍼)으로 올려 자리를 비운다.
+    /// 빼둔 아이템은 같은 종류 3개가 완성되는 순간 자동으로 돌아와 매치된다.
+    func useHold() {
+        guard phase == .playing, holdLeft > 0, buffer.isEmpty, !tray.isEmpty else { return }
+        holdLeft -= 1
+        withAnimation(.spring(duration: 0.3)) {
+            let moved = Array(tray.prefix(3))
+            tray.removeFirst(moved.count)
+            buffer = moved
+        }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
     func togglePause() {
@@ -102,7 +131,7 @@ final class GameState: ObservableObject {
 
     /// 보상 광고 시청 후 부스터 충전
     func refillBoosters() {
-        shuffleLeft += 2
+        holdLeft += 1
         magnetLeft += 1
         timeBoostLeft += 1
     }

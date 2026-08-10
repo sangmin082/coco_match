@@ -16,8 +16,8 @@ final class GameController: NSObject {
     private var lastShake: CFTimeInterval = 0
 
     // 갈매기 게임식 총량 유지: 화면에는 최대 maxOnScreen개만 렌더링하고
-    // 나머지는 대기열에 뒀다가 아이템을 수집할 때마다 위에서 새로 떨어진다.
-    private let maxOnScreen = 54
+    // 나머지는 대기열에 뒀다가 아이템을 수집할 때마다 새로 생성한다.
+    private let maxOnScreen = 100
     private var pendingQueue: [ItemType] = []
     private var itemScale: CGFloat = 1.0
     private var rescueTimer: Timer?
@@ -58,8 +58,10 @@ final class GameController: NSObject {
         startMotionUpdates()
         startRescueTimer()
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        scnView.addGestureRecognizer(tap)
+        // 누르는 동안 노란 하이라이트로 어떤 아이템이 골라졌는지 보여주고, 떼는 순간 수집
+        let press = UILongPressGestureRecognizer(target: self, action: #selector(handlePress(_:)))
+        press.minimumPressDuration = 0
+        scnView.addGestureRecognizer(press)
     }
 
     deinit {
@@ -119,6 +121,7 @@ final class GameController: NSObject {
         }
         for type in pendingQueue { counts[type, default: 0] += 1 }
         for type in state.tray { counts[type, default: 0] += 1 }
+        for type in state.buffer { counts[type, default: 0] += 1 }
         for type in inFlight { counts[type, default: 0] += 1 }
 
         // ① 종별 잔량은 3의 배수여야 전부 매치로 소진할 수 있다 — 모자란 만큼 보충
@@ -132,7 +135,8 @@ final class GameController: NSObject {
         }
 
         // ② 트리플이 통째로 사라진 경우: 전체 총량 부족분을 3개 단위로 보충
-        let expected = state.level.totalItems - state.matchedCount - state.tray.count
+        let expected = state.level.totalItems - state.matchedCount
+            - state.tray.count - state.buffer.count
         var actual = itemNodes.count + pendingQueue.count + inFlight.count
         var typeIndex = 0
         while actual < expected {
@@ -370,15 +374,40 @@ final class GameController: NSObject {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
-    // MARK: - Tap collect
+    // MARK: - Press & collect (누르면 하이라이트, 떼면 수집)
 
-    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+    private var highlightedNode: SCNNode?
+    private var highlightedMaterials: [SCNMaterial] = []
+
+    @objc private func handlePress(_ gesture: UILongPressGestureRecognizer) {
         guard let state = gameState,
               state.phase == .playing,
-              state.tray.count < state.trayCapacity else { return }
+              state.tray.count < state.trayCapacity else {
+            unhighlight()
+            return
+        }
 
-        let point = gesture.location(in: scnView)
-        // 바운딩 박스 기준 히트테스트 + 탭 지점 주변 샘플링으로 인식률을 높인다
+        switch gesture.state {
+        case .began, .changed:
+            // 손가락 아래 아이템을 노란 음영으로 표시 (드래그하면 선택도 따라 움직임)
+            let node = itemNode(at: gesture.location(in: scnView))
+            if node !== highlightedNode {
+                unhighlight()
+                if let node { highlight(node) }
+            }
+        case .ended:
+            if let node = highlightedNode {
+                unhighlight()
+                collect(node: node)
+            }
+        default:
+            unhighlight()
+        }
+    }
+
+    /// 탭 지점의 아이템 루트 노드를 찾는다.
+    /// 바운딩 박스 기준 히트테스트 + 주변 샘플링으로 인식률을 높인다.
+    private func itemNode(at point: CGPoint) -> SCNNode? {
         let options: [SCNHitTestOption: Any] = [
             .searchMode: SCNHitTestSearchMode.all.rawValue,
             .boundingBoxOnly: true,
@@ -392,12 +421,31 @@ final class GameController: NSObject {
         for offset in offsets {
             let p = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
             for hit in scnView.hitTest(p, options: options) {
-                if let root = itemRoot(of: hit.node) {
-                    collect(node: root)
-                    return
-                }
+                if let root = itemRoot(of: hit.node) { return root }
             }
         }
+        return nil
+    }
+
+    /// 노란 발광(emission)으로 선택 중인 아이템을 강조한다
+    private func highlight(_ node: SCNNode) {
+        highlightedNode = node
+        node.enumerateHierarchy { child, _ in
+            for material in child.geometry?.materials ?? [] {
+                material.emission.contents = UIColor(red: 1.0, green: 0.82, blue: 0.15, alpha: 1)
+                material.emission.intensity = 0.55
+                highlightedMaterials.append(material)
+            }
+        }
+    }
+
+    private func unhighlight() {
+        for material in highlightedMaterials {
+            material.emission.contents = UIColor.black
+            material.emission.intensity = 1
+        }
+        highlightedMaterials = []
+        highlightedNode = nil
     }
 
     /// 부품(자식 노드)이 히트되어도 아이템 루트 노드를 찾아 반환한다
@@ -412,6 +460,8 @@ final class GameController: NSObject {
 
     private func collect(node: SCNNode) {
         guard let name = node.name, let type = ItemType(rawValue: name) else { return }
+        // 자석/하이라이트 경로가 겹쳐 같은 노드를 두 번 수집하는 것 방지
+        guard itemNodes.contains(where: { $0 === node }) else { return }
         itemNodes.removeAll { $0 === node }
         inFlight.append(type)
         node.physicsBody = nil
@@ -448,14 +498,6 @@ final class GameController: NSObject {
     }
 
     // MARK: - Boosters
-
-    /// 🌪 셔플: 전체 아이템을 크게 튀어오르게 해 더미를 뒤섞는다.
-    func useShuffle() {
-        guard let state = gameState, state.phase == .playing, state.shuffleLeft > 0 else { return }
-        state.shuffleLeft -= 1
-        lastShake = 0
-        applyImpulseToAll(strength: 3.0)
-    }
 
     /// 🧲 자석: 트레이 상황에 맞는 최적의 트리플을 자동 완성한다.
     /// 트레이 오버플로우(패배)가 발생하지 않는 경우에만 발동.

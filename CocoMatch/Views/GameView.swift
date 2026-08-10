@@ -48,6 +48,7 @@ struct GameView: View {
                 hud
                 Spacer()
                 boosterRow
+                bufferShelf
                 TrayView(gameState: gameState)
             }
             .padding(.horizontal, 14)
@@ -135,8 +136,8 @@ struct GameView: View {
 
     private var boosterRow: some View {
         HStack(spacing: 14) {
-            BoosterButton(emoji: "🌪", title: "셔플", count: gameState.shuffleLeft) {
-                controller?.useShuffle()
+            BoosterButton(emoji: "↩️", title: "빼두기", count: gameState.holdLeft) {
+                gameState.useHold()
             }
             BoosterButton(emoji: "🧲", title: "자석", count: gameState.magnetLeft) {
                 controller?.useMagnet()
@@ -145,7 +146,7 @@ struct GameView: View {
                 gameState.useTimeBoost()
             }
             // 부스터를 모두 쓰면 광고 보고 충전
-            if gameState.shuffleLeft == 0, gameState.magnetLeft == 0,
+            if gameState.holdLeft == 0, gameState.magnetLeft == 0,
                gameState.timeBoostLeft == 0, ads.boosterAdReady {
                 Button {
                     AdManager.shared.showBoosterAd { [weak gameState] in
@@ -161,6 +162,32 @@ struct GameView: View {
                     .background(.green.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
                 }
             }
+        }
+    }
+
+    // MARK: - Buffer shelf (빼두기 선반)
+
+    /// 트레이 위 선반: ↩️ 빼두기로 올려둔 아이템들.
+    /// 같은 종류 3개가 완성되면 자동으로 트레이로 돌아와 매치된다.
+    @ViewBuilder
+    private var bufferShelf: some View {
+        if !gameState.buffer.isEmpty {
+            HStack(spacing: 6) {
+                Text("↩️").font(.caption)
+                ForEach(Array(gameState.buffer.enumerated()), id: \.offset) { _, type in
+                    Image(uiImage: ItemThumbnail.image(for: type))
+                        .resizable()
+                        .scaledToFit()
+                        .padding(3)
+                        .frame(width: 40, height: 46)
+                        .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 9))
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.brown.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
+            .transition(.scale.combined(with: .opacity))
         }
     }
 
