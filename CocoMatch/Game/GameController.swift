@@ -24,6 +24,11 @@ final class GameController: NSObject {
     /// 탭 후 트레이로 날아가는 중인 아이템 (총량 검증 시 집계에 포함)
     private var inFlight: [ItemType] = []
 
+    // 강제 정지: 입력(기울임 변화·흔들기·수집)이 잠잠해지면 미세 떨림을 0으로 클램프
+    private var calmTimer: Timer?
+    private var lastActivity: CFTimeInterval = CACurrentMediaTime()
+    private var lastTiltX: Double = 0
+
     // 플레이 박스 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식).
     // 상단 HUD와 하단 트레이/부스터 UI에 겹치지 않도록 화면 중앙 영역만 사용한다.
     // 카메라 기준 화면 세로 가시 범위는 대략 y -0.8 ~ 13.8.
@@ -59,6 +64,7 @@ final class GameController: NSObject {
         ItemThumbnail.prewarm(types: gameState.level.itemTypes)
         startMotionUpdates()
         startRescueTimer()
+        startCalmTimer()
 
         // 누르는 동안 노란 하이라이트로 어떤 아이템이 골라졌는지 보여주고, 떼는 순간 수집
         let press = UILongPressGestureRecognizer(target: self, action: #selector(handlePress(_:)))
@@ -69,6 +75,7 @@ final class GameController: NSObject {
     deinit {
         motion.stopDeviceMotionUpdates()
         rescueTimer?.invalidate()
+        calmTimer?.invalidate()
     }
 
     func setPaused(_ paused: Bool) {
@@ -78,7 +85,37 @@ final class GameController: NSObject {
     func stop() {
         motion.stopDeviceMotionUpdates()
         rescueTimer?.invalidate()
+        calmTimer?.invalidate()
         scnView.isPlaying = false
+    }
+
+    // MARK: - 강제 정지 (미세 떨림 제거)
+
+    private func markActivity() {
+        lastActivity = CACurrentMediaTime()
+    }
+
+    /// 입력이 1초 이상 없으면 느리게 꿈틀대는 아이템의 속도를 강제로 0으로 만든다.
+    /// 임계값(0.8)은 자유 낙하 중인 아이템이 다음 틱 전에 다시 넘어설 수 있는 크기라
+    /// 공중의 아이템은 계속 움직이고, 더미에 낀 아이템만 완전히 멈춘다.
+    private func startCalmTimer() {
+        calmTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
+            self?.calmDownIfIdle()
+        }
+    }
+
+    private func calmDownIfIdle() {
+        guard !scene.isPaused else { return }
+        guard CACurrentMediaTime() - lastActivity > 1.0 else { return }
+        for node in itemNodes {
+            guard let body = node.physicsBody else { continue }
+            let v = body.velocity
+            let speedSquared = v.x * v.x + v.y * v.y + v.z * v.z
+            if speedSquared < 0.64 {
+                body.velocity = SCNVector3Zero
+                body.angularVelocity = SCNVector4Zero
+            }
+        }
     }
 
     /// 강한 임펄스로 벽을 뚫고 탈출한 아이템을 주기적으로 박스 안으로 되돌린다.
@@ -259,7 +296,7 @@ final class GameController: NSObject {
         node.position = position
         if hasPhysics {
             node.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-            node.physicsBody?.restitution = 0.1
+            node.physicsBody?.restitution = 0.3
             node.physicsBody?.friction = 0.6
         }
         if transparency < 0.99 { node.castsShadow = false }
@@ -321,6 +358,7 @@ final class GameController: NSObject {
         )
         itemNodes.append(node)
         scene.rootNode.addChildNode(node)
+        markActivity()
     }
 
     // MARK: - Motion (기울임 = 중력, 흔들기 = 임펄스)
@@ -343,10 +381,17 @@ final class GameController: NSObject {
                 -2.2
             )
 
+            // 기울임이 의미 있게 바뀌면 활동으로 간주 (강제 정지 해제)
+            if abs(g.x - self.lastTiltX) > 0.06 {
+                self.lastTiltX = g.x
+                self.markActivity()
+            }
+
             let ua = data.userAcceleration
             let magnitude = sqrt(ua.x * ua.x + ua.y * ua.y + ua.z * ua.z)
             if magnitude > 0.75 {
-                self.applyImpulseToAll(strength: Float(min(magnitude * 1.4, 4.5)))
+                // 흔들수록 확 튀게 — 임펄스를 세게
+                self.applyImpulseToAll(strength: Float(min(magnitude * 2.2, 7.0)))
             }
         }
     }
@@ -356,13 +401,14 @@ final class GameController: NSObject {
         guard now - lastShake > 0.35 else { return }
         lastShake = now
         guard gameState?.phase == .playing else { return }
+        markActivity()
 
         for node in itemNodes {
             // 중앙 덩어리가 사방으로 흩어졌다가 다시 모이도록 전방향 대칭 임펄스
             node.physicsBody?.applyForce(
                 SCNVector3(
-                    Float.random(in: -1...1) * strength * 3.0,
-                    Float.random(in: -1...1) * strength * 3.0,
+                    Float.random(in: -1...1) * strength * 3.5,
+                    Float.random(in: -1...1) * strength * 3.5,
                     Float.random(in: -1...1) * strength * 1.2
                 ),
                 asImpulse: true
@@ -467,6 +513,7 @@ final class GameController: NSObject {
         itemNodes.removeAll { $0 === node }
         inFlight.append(type)
         node.physicsBody = nil
+        markActivity()  // 빈자리로 더미가 재정렬되는 동안은 강제 정지 유예
 
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
