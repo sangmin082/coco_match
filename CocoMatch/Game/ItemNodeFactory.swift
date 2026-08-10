@@ -1455,7 +1455,7 @@ enum ItemNodeFactory {
              UIColor(red: 0.20, green: 0.50, blue: 0.24, alpha: 1),
              position: SCNVector3(0, -0.50, 0), gloss: 0.5, in: parent)
         for (x, y) in [(-0.14, -0.10), (0.12, -0.16), (0.0, 0.10), (-0.05, -0.28)] {
-            part(SCNSphere(radius: 0.035), seaweedBlack,
+            part(SCNSphere(radius: 0.035), UIColor(red: 0.14, green: 0.10, blue: 0.08, alpha: 1),
                  position: SCNVector3(Float(x), Float(y), 0.14),
                  scale: SCNVector3(0.8, 1.2, 0.4), gloss: 0.5, in: parent)
         }
