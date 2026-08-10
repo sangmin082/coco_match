@@ -103,17 +103,33 @@ enum ItemNodeFactory {
         return node
     }
 
-    /// 종류별 크기 편차 — 모든 아이템이 같은 크기로 보이지 않게 한다
+    /// 종류별 크기 편차 — 실제 크기 비율을 게임 스케일로 압축해 반영한다.
+    /// (체리 한 알 ↔ 수박 한 통이 실제처럼 제각각으로 보이되, 탭 가능한 범위 유지)
     private static func sizeMultiplier(for type: ItemType) -> CGFloat {
         switch type {
-        // 작은 아이템 (한입 크기)
-        case .cherry, .blueberry, .plum, .lime, .strawberry,
-             .candy, .cookie, .eggTart, .juiceBox, .butter, .mandu:
-            return 0.85
-        // 큰 아이템 (묵직한 존재감)
-        case .watermelon, .melon, .pineapple, .milk, .cakeSlice,
-             .watermelonSlice, .ramen, .boba, .shavedIce, .cheese:
+        // 미니 — 한입 크기 (체리 알, 초밥 한 점, 사탕)
+        case .cherry, .blueberry, .candy, .sushi, .butter:
+            return 0.65
+        // 소형 — 손 안에 쏙 (딸기, 자두, 쿠키, 만두)
+        case .strawberry, .lime, .plum, .fig, .cookie, .eggTart,
+             .mandu, .chocolate, .juiceBox, .onigiri:
+            return 0.78
+        // 중소형 — 주먹보다 작게 (레몬, 키위, 도넛, 컵케이크)
+        case .lemon, .kiwi, .peach, .tomato, .grape, .greenGrape,
+             .friedEgg, .donut, .cupcake, .hotteok, .croissant,
+             .popsicle, .friedShrimp, .carrot:
+            return 0.88
+        // 중대형 — 묵직한 존재감 (코코넛, 파파야, 라면 그릇, 통닭, 피자)
+        case .coconut, .dragonfruit, .papaya, .milk, .ramen,
+             .chicken, .pizza, .boba, .shavedIce, .watermelonSlice, .cheese:
             return 1.15
+        // 대형 (파인애플, 멜론)
+        case .pineapple, .melon:
+            return 1.3
+        // 최대 (수박 한 통)
+        case .watermelon:
+            return 1.45
+        // 기본 — 사과·오렌지·햄버거급
         default:
             return 1.0
         }

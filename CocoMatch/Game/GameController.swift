@@ -203,14 +203,17 @@ final class GameController: NSObject {
         }
     }
 
-    /// 박스 상단에서 아이템 1개를 떨어뜨린다 (초기 웨이브·대기열 보충 공용)
-    private func spawnItem(_ type: ItemType) {
+    /// 아이템 1개 생성. 초기 웨이브는 박스 상단에서 떨어지고,
+    /// 대기열 보충(fromBottom)은 박스 맨 밑에서 위로 튀어나온다 (갈매기 게임식)
+    private func spawnItem(_ type: ItemType, fromBottom: Bool = false) {
         let node = ItemNodeFactory.makeNode(for: type, scale: itemScale)
-        node.position = SCNVector3(
-            Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8)),
-            Float.random(in: (boxTop - 1.8)...(boxTop - 0.9)),
-            Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
-        )
+        let x = Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8))
+        let z = Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
+        if fromBottom {
+            node.position = SCNVector3(x, boxBottom + 0.7, z)
+        } else {
+            node.position = SCNVector3(x, Float.random(in: (boxTop - 1.8)...(boxTop - 0.9)), z)
+        }
         node.eulerAngles = SCNVector3(
             Float.random(in: -0.45...0.45),
             Float.random(in: -0.45...0.45),
@@ -218,6 +221,15 @@ final class GameController: NSObject {
         )
         itemNodes.append(node)
         scene.rootNode.addChildNode(node)
+        if fromBottom {
+            // 바닥에서 뿅 하고 솟구치는 임펄스
+            node.physicsBody?.applyForce(
+                SCNVector3(Float.random(in: -0.8...0.8),
+                           Float.random(in: 5.5...7.5),
+                           Float.random(in: -0.4...0.4)),
+                asImpulse: true
+            )
+        }
     }
 
     // MARK: - Motion (기울임 = 중력, 흔들기 = 임펄스)
@@ -333,11 +345,11 @@ final class GameController: NSObject {
             self?.gameState?.collect(type)
         }
 
-        // 대기열 보충: 하나 수집할 때마다 새 아이템이 위에서 튀어나온다 (총량 유지)
+        // 대기열 보충: 하나 수집할 때마다 새 아이템이 맨 밑에서 튀어나온다 (총량 유지)
         if !pendingQueue.isEmpty {
             let next = pendingQueue.removeFirst()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-                self?.spawnItem(next)
+                self?.spawnItem(next, fromBottom: true)
             }
         }
     }
