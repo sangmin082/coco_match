@@ -108,7 +108,7 @@ final class GameController: NSObject {
     private func clampMicroMotion() {
         guard !scene.isPaused else { return }
         let now = CACurrentMediaTime()
-        guard now - lastShake > 0.8, now - lastActivity > 0.6 else { return }
+        guard now - lastShake > 1.2, now - lastActivity > 0.6 else { return }
         for node in itemNodes {
             guard let body = node.physicsBody else { continue }
             let v = body.velocity
@@ -230,15 +230,19 @@ final class GameController: NSObject {
 
     /// 중앙 "바닥"(플레이어가 보는 노란 뒷벽)에 달린 약한 자석 같은 방사형 중력장.
     /// 아이템들이 바닥 중앙에 덩어리로 모이고, 기울이면 덩어리째 쏠린다 (갈매기 게임식).
+    private let fieldStrength: CGFloat = 4.5
+    private var centerFieldNode: SCNNode?
+
     private func setupCenterGravityField() {
         let field = SCNPhysicsField.radialGravity()
-        field.strength = 4.5
+        field.strength = fieldStrength
         field.falloffExponent = 0      // 거리와 무관하게 일정한 힘
         field.minimumDistance = 1.2    // 중심 근처 떨림 방지
         let fieldNode = SCNNode()
         fieldNode.physicsField = field
         fieldNode.position = SCNVector3(0, boxCenterY, -tankDepth / 2 + 0.3)
         scene.rootNode.addChildNode(fieldNode)
+        centerFieldNode = fieldNode
     }
 
     private func setupBin() {
@@ -405,23 +409,51 @@ final class GameController: NSObject {
         guard gameState?.phase == .playing else { return }
         markActivity()
 
+        // 폭발 동안 중앙 자석을 잠깐 꺼서 꽉 찬 더미도 시원하게 흩어지게 한다
+        centerFieldNode?.physicsField?.strength = 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+            guard let self else { return }
+            self.centerFieldNode?.physicsField?.strength = self.fieldStrength
+        }
+
+        let centerZ = -tankDepth / 2 + 0.3
         for node in itemNodes {
-            // 중앙 덩어리가 사방으로 흩어졌다가 다시 모이도록 전방향 대칭 임펄스
-            node.physicsBody?.applyForce(
+            guard let body = node.physicsBody else { continue }
+            // 중심에서 바깥으로 터지는 방향 (빽빽한 더미에서도 상쇄되지 않는 코히어런트 폭발)
+            let p = node.presentation.position
+            var dx = p.x, dy = p.y - boxCenterY, dz = p.z - centerZ
+            let length = sqrt(dx * dx + dy * dy + dz * dz)
+            if length < 0.3 {
+                dx = Float.random(in: -1...1); dy = Float.random(in: -1...1); dz = Float.random(in: 0...1)
+            } else {
+                dx /= length; dy /= length; dz /= length
+            }
+            // 폭발이 화끈하도록 감쇠도 잠깐 풀어준다 (아래에서 복원)
+            body.damping = 0.05
+            body.angularDamping = 0.3
+            body.applyForce(
                 SCNVector3(
-                    Float.random(in: -1...1) * strength * 4.2,
-                    Float.random(in: -1...1) * strength * 4.2,
-                    Float.random(in: -1...1) * strength * 1.2
+                    dx * strength * 2.4 + Float.random(in: -1...1) * strength * 1.4,
+                    dy * strength * 2.4 + Float.random(in: -1...1) * strength * 1.4,
+                    dz * strength * 0.9 + Float.random(in: -1...1) * strength * 0.5
                 ),
                 asImpulse: true
             )
-            node.physicsBody?.applyTorque(
+            body.applyTorque(
                 SCNVector4(Float.random(in: -1...1), Float.random(in: -1...1),
-                           Float.random(in: -1...1), Float.random(in: 0.5...1.5) * strength),
+                           Float.random(in: -1...1), Float.random(in: 0.8...1.8) * strength),
                 asImpulse: true
             )
         }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // 폭발이 끝나면 감쇠 복원 (연속 흔들기 중이면 다음 폭발의 복원에 맡긴다)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
+            guard let self, CACurrentMediaTime() - self.lastShake >= 0.85 else { return }
+            for node in self.itemNodes {
+                node.physicsBody?.damping = 0.32
+                node.physicsBody?.angularDamping = 0.85
+            }
+        }
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
     }
 
     // MARK: - Press & collect (누르면 하이라이트, 떼면 수집)
