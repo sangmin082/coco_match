@@ -94,11 +94,13 @@ enum ItemNodeFactory {
                                     options: [SCNPhysicsShape.Option.scale: itemScale])
         let body = SCNPhysicsBody(type: .dynamic, shape: shape)
         body.mass = 1
-        body.restitution = 0.5
+        // 꽉 찬 더미가 미세하게 떨리지 않도록: 튀김 최소화 + 강한 감쇠 + 정지 시 수면
+        body.restitution = 0.12
         body.friction = 0.6
-        body.rollingFriction = 0.3
-        body.angularDamping = 0.45
-        body.damping = 0.1
+        body.rollingFriction = 0.55
+        body.angularDamping = 0.85
+        body.damping = 0.32
+        body.allowsResting = true
         node.physicsBody = body
         return node
     }

@@ -49,6 +49,8 @@ final class GameController: NSObject {
 
         // 기본 중력은 끄고(약한 뒷벽 밀착만 유지) 화면 중앙의 방사형 중력장이 아이템을 끌어모은다
         scene.physicsWorld.gravity = SCNVector3(0, 0, -2.2)
+        // 100개 더미가 떨리지 않도록 물리 시뮬레이션을 더 촘촘하게 계산
+        scene.physicsWorld.timeStep = 1.0 / 120.0
 
         setupCameraAndLights()
         setupBin()
@@ -191,9 +193,9 @@ final class GameController: NSObject {
     /// 아이템들이 바닥 중앙에 덩어리로 모이고, 기울이면 덩어리째 쏠린다 (갈매기 게임식).
     private func setupCenterGravityField() {
         let field = SCNPhysicsField.radialGravity()
-        field.strength = 5.5
+        field.strength = 4.5
         field.falloffExponent = 0      // 거리와 무관하게 일정한 힘
-        field.minimumDistance = 0.5    // 중심 근처 떨림 방지
+        field.minimumDistance = 1.2    // 중심 근처 떨림 방지
         let fieldNode = SCNNode()
         fieldNode.physicsField = field
         fieldNode.position = SCNVector3(0, boxCenterY, -tankDepth / 2 + 0.3)
@@ -257,7 +259,7 @@ final class GameController: NSObject {
         node.position = position
         if hasPhysics {
             node.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-            node.physicsBody?.restitution = 0.4
+            node.physicsBody?.restitution = 0.1
             node.physicsBody?.friction = 0.6
         }
         if transparency < 0.99 { node.castsShadow = false }
