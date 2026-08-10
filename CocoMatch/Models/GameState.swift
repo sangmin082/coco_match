@@ -24,6 +24,9 @@ final class GameState: ObservableObject {
     @Published var timeBoostLeft = 1
     @Published var usedRevive = false
 
+    /// 트레이에 들어가지 못한 아이템을 보드로 되돌릴 때 호출 (총량 보존 — 아이템 증발 방지)
+    var onItemReturnedToBoard: ((ItemType) -> Void)?
+
     private var timerCancellable: AnyCancellable?
 
     init(level: LevelData) {
@@ -46,8 +49,10 @@ final class GameState: ObservableObject {
     }
 
     /// 보드에서 아이템 하나를 트레이로 가져온다. 3개가 모이면 즉시 매치.
-    func collect(_ type: ItemType) {
-        guard phase == .playing else { return }
+    /// 게임이 진행 중이 아니어서 받지 못했으면 false를 반환한다 (호출측에서 보드로 되돌려야 함).
+    @discardableResult
+    func collect(_ type: ItemType) -> Bool {
+        guard phase == .playing else { return false }
         withAnimation(.spring(duration: 0.25)) {
             tray.append(type)
             tray.sort { $0.rawValue < $1.rawValue }
@@ -66,6 +71,7 @@ final class GameState: ObservableObject {
         } else if tray.count >= trayCapacity {
             finish(won: false)
         }
+        return true
     }
 
     func useTimeBoost() {
@@ -80,11 +86,14 @@ final class GameState: ObservableObject {
     }
 
     /// 보상 광고 시청 후 이어하기: 트레이 1칸 비우기 + 15초 추가 (판당 1회)
+    /// 비운 아이템은 삭제하지 않고 보드로 되돌린다 (삭제하면 총량이 모자라 클리어 불가)
     func reviveWithAd() {
         guard phase == .lost, !usedRevive else { return }
         usedRevive = true
         if !tray.isEmpty {
-            withAnimation(.spring(duration: 0.3)) { tray.removeLast() }
+            var returned: ItemType?
+            withAnimation(.spring(duration: 0.3)) { returned = tray.removeLast() }
+            if let returned { onItemReturnedToBoard?(returned) }
         }
         timeRemaining += 15
         phase = .playing

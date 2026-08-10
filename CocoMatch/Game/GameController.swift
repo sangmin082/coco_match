@@ -20,6 +20,9 @@ final class GameController: NSObject {
     private let maxOnScreen = 54
     private var pendingQueue: [ItemType] = []
     private var itemScale: CGFloat = 1.0
+    private var rescueTimer: Timer?
+    /// 탭 후 트레이로 날아가는 중인 아이템 (총량 검증 시 집계에 포함)
+    private var inFlight: [ItemType] = []
 
     // 플레이 박스 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식).
     // 상단 HUD와 하단 트레이/부스터 UI에 겹치지 않도록 화면 중앙 영역만 사용한다.
@@ -33,6 +36,11 @@ final class GameController: NSObject {
     init(gameState: GameState) {
         self.gameState = gameState
         super.init()
+
+        // 이어하기 등으로 트레이에서 빠진 아이템은 삭제하지 않고 보드로 되돌린다
+        gameState.onItemReturnedToBoard = { [weak self] type in
+            self?.spawnItem(type, hiddenInPile: true)
+        }
 
         scnView.scene = scene
         scnView.antialiasingMode = .multisampling4X
@@ -48,6 +56,7 @@ final class GameController: NSObject {
         spawnItems(for: gameState.level)
         ItemThumbnail.prewarm(types: gameState.level.itemTypes)
         startMotionUpdates()
+        startRescueTimer()
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         scnView.addGestureRecognizer(tap)
@@ -55,6 +64,7 @@ final class GameController: NSObject {
 
     deinit {
         motion.stopDeviceMotionUpdates()
+        rescueTimer?.invalidate()
     }
 
     func setPaused(_ paused: Bool) {
@@ -63,7 +73,83 @@ final class GameController: NSObject {
 
     func stop() {
         motion.stopDeviceMotionUpdates()
+        rescueTimer?.invalidate()
         scnView.isPlaying = false
+    }
+
+    /// 강한 임펄스로 벽을 뚫고 탈출한 아이템을 주기적으로 박스 안으로 되돌린다.
+    /// (탈출한 아이템은 탭할 수 없어 레벨 클리어가 불가능해지므로 반드시 회수)
+    private func startRescueTimer() {
+        rescueTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.rescueEscapedItems()
+        }
+    }
+
+    private func rescueEscapedItems() {
+        guard !scene.isPaused else { return }
+        for node in itemNodes {
+            let p = node.presentation.position
+            let escaped = abs(p.x) > tankWidth / 2 + 1.2
+                || p.y < boxBottom - 1.5 || p.y > boxTop + 1.5
+                || abs(p.z) > tankDepth / 2 + 1.2
+            if escaped {
+                node.physicsBody?.velocity = SCNVector3Zero
+                node.physicsBody?.angularVelocity = SCNVector4Zero
+                node.position = SCNVector3(
+                    Float.random(in: -1.0...1.0),
+                    boxCenterY,
+                    Float.random(in: -0.5...0.5)
+                )
+                node.physicsBody?.resetTransform()
+            }
+        }
+        reconcileItemEconomy()
+    }
+
+    /// 총량 자가치유: 어떤 이유로든 아이템이 사라져 잔량이 어긋나면 보충한다.
+    /// (아이템이 모자라면 매치를 다 채울 수 없어 레벨이 영원히 안 끝나기 때문)
+    private func reconcileItemEconomy() {
+        guard let state = gameState, state.phase == .playing else { return }
+
+        var counts: [ItemType: Int] = [:]
+        for node in itemNodes {
+            if let name = node.name, let type = ItemType(rawValue: name) {
+                counts[type, default: 0] += 1
+            }
+        }
+        for type in pendingQueue { counts[type, default: 0] += 1 }
+        for type in state.tray { counts[type, default: 0] += 1 }
+        for type in inFlight { counts[type, default: 0] += 1 }
+
+        // ① 종별 잔량은 3의 배수여야 전부 매치로 소진할 수 있다 — 모자란 만큼 보충
+        for type in state.level.itemTypes {
+            let rem = counts[type, default: 0] % 3
+            guard rem != 0 else { continue }
+            for _ in 0..<(3 - rem) {
+                addReplacement(type)
+                counts[type, default: 0] += 1
+            }
+        }
+
+        // ② 트리플이 통째로 사라진 경우: 전체 총량 부족분을 3개 단위로 보충
+        let expected = state.level.totalItems - state.matchedCount - state.tray.count
+        var actual = itemNodes.count + pendingQueue.count + inFlight.count
+        var typeIndex = 0
+        while actual < expected {
+            let type = state.level.itemTypes[typeIndex % state.level.itemTypes.count]
+            for _ in 0..<3 { addReplacement(type) }
+            actual += 3
+            typeIndex += 1
+        }
+    }
+
+    /// 보드에 자리가 있으면 바로 스폰, 가득 차 있으면 대기열로
+    private func addReplacement(_ type: ItemType) {
+        if itemNodes.count >= maxOnScreen {
+            pendingQueue.append(type)
+        } else {
+            spawnItem(type, hiddenInPile: true)
+        }
     }
 
     // MARK: - Scene setup
@@ -327,6 +413,7 @@ final class GameController: NSObject {
     private func collect(node: SCNNode) {
         guard let name = node.name, let type = ItemType(rawValue: name) else { return }
         itemNodes.removeAll { $0 === node }
+        inFlight.append(type)
         node.physicsBody = nil
 
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -341,7 +428,14 @@ final class GameController: NSObject {
         node.runAction(SCNAction.sequence([fly, SCNAction.removeFromParentNode()]))
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.gameState?.collect(type)
+            guard let self else { return }
+            if let index = self.inFlight.firstIndex(of: type) {
+                self.inFlight.remove(at: index)
+            }
+            if self.gameState?.collect(type) != true {
+                // 날아가는 사이 시간초과/일시정지가 됐다면 아이템을 보드로 되돌린다 (증발 방지)
+                self.spawnItem(type, hiddenInPile: true)
+            }
         }
 
         // 대기열 보충: 하나 수집할 때마다 새 아이템이 더미 밑에서 조용히 생겨난다 (총량 유지)
