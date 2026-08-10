@@ -95,23 +95,25 @@ final class GameController: NSObject {
         lastActivity = CACurrentMediaTime()
     }
 
-    /// 입력이 1초 이상 없으면 느리게 꿈틀대는 아이템의 속도를 강제로 0으로 만든다.
-    /// 임계값(0.8)은 자유 낙하 중인 아이템이 다음 틱 전에 다시 넘어설 수 있는 크기라
-    /// 공중의 아이템은 계속 움직이고, 더미에 낀 아이템만 완전히 멈춘다.
+    /// 플레이 중 상시로 느리게 꿈틀대는 아이템을 강제로 완전 정지시킨다.
+    /// 흔들기 직후 0.8초와 기울임 조작 중에만 잠깐 풀어줘서 시원한 반동은 살린다.
+    /// 임계 속도(0.55)는 중력장 가속(4.5)이 한 틱(0.15초) 안에 다시 넘어설 수 있는 크기라
+    /// 낙하·재정렬 중인 아이템은 계속 움직이고, 더미에 낀 아이템만 얼어붙는다.
     private func startCalmTimer() {
-        calmTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
-            self?.calmDownIfIdle()
+        calmTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+            self?.clampMicroMotion()
         }
     }
 
-    private func calmDownIfIdle() {
+    private func clampMicroMotion() {
         guard !scene.isPaused else { return }
-        guard CACurrentMediaTime() - lastActivity > 1.0 else { return }
+        let now = CACurrentMediaTime()
+        guard now - lastShake > 0.8, now - lastActivity > 0.6 else { return }
         for node in itemNodes {
             guard let body = node.physicsBody else { continue }
             let v = body.velocity
             let speedSquared = v.x * v.x + v.y * v.y + v.z * v.z
-            if speedSquared < 0.64 {
+            if speedSquared < 0.3 {
                 body.velocity = SCNVector3Zero
                 body.angularVelocity = SCNVector4Zero
             }
@@ -296,7 +298,7 @@ final class GameController: NSObject {
         node.position = position
         if hasPhysics {
             node.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-            node.physicsBody?.restitution = 0.3
+            node.physicsBody?.restitution = 0.5
             node.physicsBody?.friction = 0.6
         }
         if transparency < 0.99 { node.castsShadow = false }
@@ -358,7 +360,6 @@ final class GameController: NSObject {
         )
         itemNodes.append(node)
         scene.rootNode.addChildNode(node)
-        markActivity()
     }
 
     // MARK: - Motion (기울임 = 중력, 흔들기 = 임펄스)
@@ -389,9 +390,9 @@ final class GameController: NSObject {
 
             let ua = data.userAcceleration
             let magnitude = sqrt(ua.x * ua.x + ua.y * ua.y + ua.z * ua.z)
-            if magnitude > 0.75 {
+            if magnitude > 0.7 {
                 // 흔들수록 확 튀게 — 임펄스를 세게
-                self.applyImpulseToAll(strength: Float(min(magnitude * 2.2, 7.0)))
+                self.applyImpulseToAll(strength: Float(min(magnitude * 2.8, 9.0)))
             }
         }
     }
@@ -407,8 +408,8 @@ final class GameController: NSObject {
             // 중앙 덩어리가 사방으로 흩어졌다가 다시 모이도록 전방향 대칭 임펄스
             node.physicsBody?.applyForce(
                 SCNVector3(
-                    Float.random(in: -1...1) * strength * 3.5,
-                    Float.random(in: -1...1) * strength * 3.5,
+                    Float.random(in: -1...1) * strength * 4.2,
+                    Float.random(in: -1...1) * strength * 4.2,
                     Float.random(in: -1...1) * strength * 1.2
                 ),
                 asImpulse: true
@@ -453,17 +454,36 @@ final class GameController: NSObject {
         }
     }
 
-    /// 탭 지점의 아이템 루트 노드를 찾는다.
-    /// 바운딩 박스 기준 히트테스트 + 촘촘한 주변 샘플링(중심 → 반경 14 → 26px 나선)으로
-    /// 더미 사이에 낀 작은 아이템도 잘 잡히게 한다. 중심에 가까운 지점을 우선한다.
+    /// 탭 지점의 아이템 루트 노드를 2단계로 찾는다.
+    /// ① 정밀 판정: 실제 지오메트리 기준 — 손가락 아래에 "보이는" 아이템을 정확히 집는다.
+    ///    (바운딩 박스만 쓰면 큰 이웃의 투명 모서리가 작은 아이템을 가로채는 문제 방지)
+    /// ② 광역 판정: 바운딩 박스 + 반경 14/26/36px 나선 샘플링 — 빗나간 탭도 근처 아이템을 잡는다.
     private func itemNode(at point: CGPoint) -> SCNNode? {
-        let options: [SCNHitTestOption: Any] = [
+        // ① 정밀 (지오메트리 그대로, 중심 + 반경 8px 4방향)
+        let precise: [SCNHitTestOption: Any] = [
+            .searchMode: SCNHitTestSearchMode.all.rawValue,
+            .ignoreHiddenNodes: true,
+        ]
+        let preciseOffsets: [CGPoint] = [
+            .zero,
+            CGPoint(x: 8, y: 0), CGPoint(x: -8, y: 0),
+            CGPoint(x: 0, y: 8), CGPoint(x: 0, y: -8),
+        ]
+        for offset in preciseOffsets {
+            let p = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
+            for hit in scnView.hitTest(p, options: precise) {
+                if let root = itemRoot(of: hit.node) { return root }
+            }
+        }
+
+        // ② 광역 (바운딩 박스, 넓은 나선 샘플링)
+        let broad: [SCNHitTestOption: Any] = [
             .searchMode: SCNHitTestSearchMode.all.rawValue,
             .boundingBoxOnly: true,
             .ignoreHiddenNodes: true,
         ]
         var offsets: [CGPoint] = [.zero]
-        for radius in [14.0, 26.0] {
+        for radius in [14.0, 26.0, 36.0] {
             for i in 0..<8 {
                 let angle = Double(i) * .pi / 4
                 offsets.append(CGPoint(x: cos(angle) * radius, y: sin(angle) * radius))
@@ -471,7 +491,7 @@ final class GameController: NSObject {
         }
         for offset in offsets {
             let p = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
-            for hit in scnView.hitTest(p, options: options) {
+            for hit in scnView.hitTest(p, options: broad) {
                 if let root = itemRoot(of: hit.node) { return root }
             }
         }
@@ -516,7 +536,6 @@ final class GameController: NSObject {
         itemNodes.removeAll { $0 === node }
         inFlight.append(type)
         node.physicsBody = nil
-        markActivity()  // 빈자리로 더미가 재정렬되는 동안은 강제 정지 유예
 
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
 

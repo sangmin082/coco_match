@@ -94,8 +94,8 @@ enum ItemNodeFactory {
                                     options: [SCNPhysicsShape.Option.scale: itemScale])
         let body = SCNPhysicsBody(type: .dynamic, shape: shape)
         body.mass = 1
-        // 부딪힘은 경쾌하게 튀되(0.4), 감쇠·수면으로 금방 가라앉는다
-        body.restitution = 0.4
+        // 부딪히면 시원하게 확 튀되(0.65), 잔진동은 컨트롤러의 강제 정지가 잡는다
+        body.restitution = 0.65
         body.friction = 0.6
         body.rollingFriction = 0.55
         body.angularDamping = 0.85
