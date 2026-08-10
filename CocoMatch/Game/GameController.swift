@@ -15,6 +15,12 @@ final class GameController: NSObject {
     private var itemNodes: [SCNNode] = []
     private var lastShake: CFTimeInterval = 0
 
+    // 갈매기 게임식 총량 유지: 화면에는 최대 maxOnScreen개만 렌더링하고
+    // 나머지는 대기열에 뒀다가 아이템을 수집할 때마다 위에서 새로 떨어진다.
+    private let maxOnScreen = 54
+    private var pendingQueue: [ItemType] = []
+    private var itemScale: CGFloat = 1.0
+
     // 플레이 박스 — 정면에서 바라보는 세로형 컨테이너 (갈매기 게임식).
     // 상단 HUD와 하단 트레이/부스터 UI에 겹치지 않도록 화면 중앙 영역만 사용한다.
     // 카메라 기준 화면 세로 가시 범위는 대략 y -0.8 ~ 13.8.
@@ -172,37 +178,46 @@ final class GameController: NSObject {
     // MARK: - Items
 
     private func spawnItems(for level: LevelData) {
+        itemScale = level.itemScale
         var bag: [ItemType] = []
         for type in level.itemTypes {
             bag.append(contentsOf: Array(repeating: type, count: level.triplesPerType * 3))
         }
         bag.shuffle()
 
+        // 화면 정원(maxOnScreen)까지만 먼저 붓고 나머지는 대기열로
+        let initial = Array(bag.prefix(maxOnScreen))
+        pendingQueue = Array(bag.dropFirst(maxOnScreen))
+
         // 닫힌 박스 안에서 겹침 폭발이 없도록, 박스 상단에서 웨이브로 나눠 떨어뜨린다
         let waveSize = 12
-        for start in stride(from: 0, to: bag.count, by: waveSize) {
-            let wave = Array(bag[start..<min(start + waveSize, bag.count)])
+        for start in stride(from: 0, to: initial.count, by: waveSize) {
+            let wave = Array(initial[start..<min(start + waveSize, initial.count)])
             let delay = Double(start / waveSize) * 0.3
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                 guard let self else { return }
                 for type in wave {
-                    let node = ItemNodeFactory.makeNode(for: type, scale: level.itemScale)
-                    node.position = SCNVector3(
-                        Float.random(in: (-self.tankWidth / 2 + 0.8)...(self.tankWidth / 2 - 0.8)),
-                        Float.random(in: (self.boxTop - 1.8)...(self.boxTop - 0.9)),
-                        Float.random(in: (-self.tankDepth / 2 + 0.6)...(self.tankDepth / 2 - 0.6))
-                    )
-                    // 표정이 정면(+z)에 있으므로 살짝만 기울여 스폰 (물리로 자연스럽게 섞임)
-                    node.eulerAngles = SCNVector3(
-                        Float.random(in: -0.45...0.45),
-                        Float.random(in: -0.45...0.45),
-                        Float.random(in: -0.45...0.45)
-                    )
-                    self.itemNodes.append(node)
-                    self.scene.rootNode.addChildNode(node)
+                    self.spawnItem(type)
                 }
             }
         }
+    }
+
+    /// 박스 상단에서 아이템 1개를 떨어뜨린다 (초기 웨이브·대기열 보충 공용)
+    private func spawnItem(_ type: ItemType) {
+        let node = ItemNodeFactory.makeNode(for: type, scale: itemScale)
+        node.position = SCNVector3(
+            Float.random(in: (-tankWidth / 2 + 0.8)...(tankWidth / 2 - 0.8)),
+            Float.random(in: (boxTop - 1.8)...(boxTop - 0.9)),
+            Float.random(in: (-tankDepth / 2 + 0.6)...(tankDepth / 2 - 0.6))
+        )
+        node.eulerAngles = SCNVector3(
+            Float.random(in: -0.45...0.45),
+            Float.random(in: -0.45...0.45),
+            Float.random(in: -0.45...0.45)
+        )
+        itemNodes.append(node)
+        scene.rootNode.addChildNode(node)
     }
 
     // MARK: - Motion (기울임 = 중력, 흔들기 = 임펄스)
@@ -316,6 +331,14 @@ final class GameController: NSObject {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             self?.gameState?.collect(type)
+        }
+
+        // 대기열 보충: 하나 수집할 때마다 새 아이템이 위에서 튀어나온다 (총량 유지)
+        if !pendingQueue.isEmpty {
+            let next = pendingQueue.removeFirst()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.spawnItem(next)
+            }
         }
     }
 
