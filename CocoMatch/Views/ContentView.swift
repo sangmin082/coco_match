@@ -12,12 +12,9 @@ struct ContentView: View {
                 levelNumber: level,
                 onExit: { currentLevel = nil },
                 onNext: {
-                    if level < LevelData.maxLevel {
-                        currentLevel = level + 1
-                        session += 1
-                    } else {
-                        currentLevel = nil
-                    }
+                    // 레벨은 끝없이 이어진다
+                    currentLevel = level + 1
+                    session += 1
                 },
                 onRetry: { session += 1 }
             )
@@ -64,7 +61,7 @@ struct MenuView: View {
                 Button {
                     onSelect(unlockedLevel)
                 } label: {
-                    Text("플레이 ▶ 레벨 \(min(unlockedLevel, LevelData.maxLevel))")
+                    Text("플레이 ▶ 레벨 \(unlockedLevel)")
                         .font(.title3.bold())
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -79,9 +76,9 @@ struct MenuView: View {
                 if AppEnvironment.isTestBuild {
                     HStack(spacing: 10) {
                         Button {
-                            onSelect(LevelData.maxLevel)
+                            onSelect(100)
                         } label: {
-                            Text("🧪 레벨 \(LevelData.maxLevel) 테스트")
+                            Text("🧪 레벨 100 테스트")
                                 .font(.subheadline.bold())
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -103,8 +100,9 @@ struct MenuView: View {
                 Color.clear.frame(height: 10)
 
                 ScrollView {
+                    // 해금된 레벨 + 다가올 5개만 차근차근 보여준다 (레벨은 무한히 이어짐)
                     LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(1...LevelData.maxLevel, id: \.self) { level in
+                        ForEach(1...(unlockedLevel + 5), id: \.self) { level in
                             LevelCell(
                                 level: level,
                                 unlocked: level <= unlockedLevel,
@@ -113,7 +111,11 @@ struct MenuView: View {
                         }
                     }
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+
+                    Text("· · · 레벨은 끝없이 계속됩니다! · · ·")
+                        .font(.caption.bold())
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.vertical, 14)
                 }
             }
             .padding(.top, 30)
