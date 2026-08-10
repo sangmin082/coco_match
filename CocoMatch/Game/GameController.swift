@@ -454,18 +454,21 @@ final class GameController: NSObject {
     }
 
     /// 탭 지점의 아이템 루트 노드를 찾는다.
-    /// 바운딩 박스 기준 히트테스트 + 주변 샘플링으로 인식률을 높인다.
+    /// 바운딩 박스 기준 히트테스트 + 촘촘한 주변 샘플링(중심 → 반경 14 → 26px 나선)으로
+    /// 더미 사이에 낀 작은 아이템도 잘 잡히게 한다. 중심에 가까운 지점을 우선한다.
     private func itemNode(at point: CGPoint) -> SCNNode? {
         let options: [SCNHitTestOption: Any] = [
             .searchMode: SCNHitTestSearchMode.all.rawValue,
             .boundingBoxOnly: true,
             .ignoreHiddenNodes: true,
         ]
-        let offsets: [CGPoint] = [
-            CGPoint(x: 0, y: 0),
-            CGPoint(x: 16, y: 0), CGPoint(x: -16, y: 0),
-            CGPoint(x: 0, y: 16), CGPoint(x: 0, y: -16),
-        ]
+        var offsets: [CGPoint] = [.zero]
+        for radius in [14.0, 26.0] {
+            for i in 0..<8 {
+                let angle = Double(i) * .pi / 4
+                offsets.append(CGPoint(x: cos(angle) * radius, y: sin(angle) * radius))
+            }
+        }
         for offset in offsets {
             let p = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
             for hit in scnView.hitTest(p, options: options) {
