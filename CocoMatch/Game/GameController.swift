@@ -17,7 +17,7 @@ final class GameController: NSObject {
 
     // 갈매기 게임식 총량 유지: 화면에는 최대 maxOnScreen개만 렌더링하고
     // 나머지는 대기열에 뒀다가 아이템을 수집할 때마다 새로 생성한다.
-    private let maxOnScreen = 70
+    private let maxOnScreen = 55
     private var pendingQueue: [ItemType] = []
     private var itemScale: CGFloat = 1.0
     private var rescueTimer: Timer?
